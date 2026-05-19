@@ -1,0 +1,29 @@
+{
+  "name": "attendease-frontend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@nuxt/ui": "^2.18.7",
+    "@pinia/nuxt": "^0.5.5",
+    "@vee-validate/nuxt": "^4.14.6",
+    "@vee-validate/zod": "^4.14.6",
+    "date-fns": "^3.6.0",
+    "nuxt": "^3.13.2",
+    "pinia": "^2.2.4",
+    "vee-validate": "^4.14.6",
+    "vue": "^3.5.12",
+    "vue-router": "^4.4.5",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@nuxt/devtools": "latest",
+    "typescript": "^5.6.3"
+  }
+}
