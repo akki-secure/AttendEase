@@ -2,10 +2,9 @@ import { useForm } from "vee-validate"
 import { toTypedSchema } from "@vee-validate/zod"
 import { z } from "zod"
 import { useAuthStore } from "~/stores/auth"
+import { ASCII_ONLY } from "~/utils/validation"
 
-const ASCII_ONLY = /^[\x20-\x7E]+$/
-
-const loginSchema = toTypedSchema(
+const credentialsSchema = toTypedSchema(
   z.object({
     employee_id: z.string().min(1, "社員IDを入力してください"),
     password: z
@@ -16,34 +15,65 @@ const loginSchema = toTypedSchema(
   })
 )
 
+const passphraseSchema = toTypedSchema(
+  z.object({
+    passphrase: z.string().min(1, "合言葉を入力してください"),
+  })
+)
+
 export function useLoginForm() {
   const authStore = useAuthStore()
+  const step = ref<"credentials" | "passphrase">("credentials")
+  const storedCredentials = ref({ employee_id: "", password: "" })
 
-  const { handleSubmit, defineField, errors, isSubmitting } = useForm({
-    validationSchema: loginSchema,
-    validateOnMount: false,
+  // ステップ1: 社員ID + パスワード
+  const credentialsForm = useForm({ validationSchema: credentialsSchema, validateOnMount: false })
+  const [employeeId, employeeIdAttrs] = credentialsForm.defineField("employee_id", { validateOnModelUpdate: true })
+  const [password, passwordAttrs] = credentialsForm.defineField("password", { validateOnModelUpdate: true })
+
+  // ステップ2: 合言葉
+  const passphraseForm = useForm({ validationSchema: passphraseSchema, validateOnMount: false })
+  const [passphrase, passphraseAttrs] = passphraseForm.defineField("passphrase", { validateOnModelUpdate: true })
+
+  const onSubmitCredentials = credentialsForm.handleSubmit(async (values) => {
+    await authStore.preCheck({ employee_id: values.employee_id, password: values.password })
+    storedCredentials.value = { employee_id: values.employee_id, password: values.password }
+    step.value = "passphrase"
   })
 
-  const [employeeId, employeeIdAttrs] = defineField("employee_id", {
-    validateOnModelUpdate: true,
+  const onSubmitPassphrase = passphraseForm.handleSubmit(async (values) => {
+    try {
+      await authStore.login({
+        employee_id: storedCredentials.value.employee_id,
+        password: storedCredentials.value.password,
+        passphrase: values.passphrase,
+      })
+    } finally {
+      storedCredentials.value = { employee_id: "", password: "" }
+    }
   })
 
-  const [password, passwordAttrs] = defineField("password", {
-    validateOnModelUpdate: true,
-  })
-
-  const onSubmit = handleSubmit(async (values) => {
-    await authStore.login({ employee_id: values.employee_id, password: values.password })
-  })
+  function backToCredentials() {
+    step.value = "credentials"
+    storedCredentials.value = { employee_id: "", password: "" }
+    authStore.clearError()
+  }
 
   return {
+    step,
     employeeId,
     employeeIdAttrs,
     password,
     passwordAttrs,
-    errors,
-    isSubmitting,
-    onSubmit,
+    passphrase,
+    passphraseAttrs,
+    credentialsErrors: credentialsForm.errors,
+    passphraseErrors: passphraseForm.errors,
+    isSubmittingCredentials: credentialsForm.isSubmitting,
+    isSubmittingPassphrase: passphraseForm.isSubmitting,
+    onSubmitCredentials,
+    onSubmitPassphrase,
+    backToCredentials,
     authStore,
   }
 }
