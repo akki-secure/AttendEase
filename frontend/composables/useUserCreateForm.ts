@@ -2,8 +2,7 @@ import { useForm } from "vee-validate"
 import { toTypedSchema } from "@vee-validate/zod"
 import { z } from "zod"
 import type { UserCreateRequest, UserResponse } from "~/types/auth"
-
-const ASCII_ONLY = /^[\x20-\x7E]+$/
+import { ASCII_ONLY } from "~/utils/validation"
 
 const userCreateSchema = toTypedSchema(
   z.object({

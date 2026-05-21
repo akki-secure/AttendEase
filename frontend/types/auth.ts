@@ -1,6 +1,7 @@
 export interface LoginRequest {
   employee_id: string
   password: string
+  passphrase: string
 }
 
 export interface TokenResponse {

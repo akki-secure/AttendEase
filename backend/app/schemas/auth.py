@@ -1,14 +1,26 @@
 from pydantic import BaseModel
 
 
+class PreCheckRequest(BaseModel):
+    employee_id: str
+    password: str
+
+
 class LoginRequest(BaseModel):
     employee_id: str
     password: str
+    passphrase: str
 
 
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+class RegisterRequest(BaseModel):
+    employee_id: str
+    name: str
+    password: str
 
 
 class UserCreateRequest(BaseModel):

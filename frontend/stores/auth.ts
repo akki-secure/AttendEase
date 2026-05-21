@@ -1,5 +1,6 @@
 import { defineStore } from "pinia"
 import type { AuthUser, LoginRequest, TokenResponse } from "~/types/auth"
+import { extractApiError } from "~/utils/validation"
 
 export const useAuthStore = defineStore("auth", () => {
   const config = useRuntimeConfig()
@@ -9,6 +10,40 @@ export const useAuthStore = defineStore("auth", () => {
   const error = ref<string | null>(null)
 
   const isLoggedIn = computed(() => !!token.value)
+
+  function decodeJwtUser(jwt: string): AuthUser {
+    const decoded = JSON.parse(atob(jwt.split(".")[1]))
+    return { employee_id: decoded.sub, name: decoded.name, role: decoded.role }
+  }
+
+  // トークンが残っていればリロード後も user を復元
+  if (token.value && !user.value) {
+    try {
+      user.value = decodeJwtUser(token.value)
+    } catch {
+      token.value = null
+    }
+  }
+
+  function clearError() {
+    error.value = null
+  }
+
+  async function preCheck(payload: { employee_id: string; password: string }) {
+    isLoading.value = true
+    error.value = null
+    try {
+      await $fetch(`${config.public.apiBase}/api/v1/auth/pre-check`, {
+        method: "POST",
+        body: payload,
+      })
+    } catch (err: unknown) {
+      error.value = extractApiError(err, "認証に失敗しました。もう一度お試しください。")
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
 
   async function login(payload: LoginRequest) {
     isLoading.value = true
@@ -20,16 +55,10 @@ export const useAuthStore = defineStore("auth", () => {
         body: payload,
       })
       token.value = data.access_token
-
-      // JWT ペイロードから名前・社員IDを取得
-      const payloadPart = data.access_token.split(".")[1]
-      const decoded = JSON.parse(atob(payloadPart))
-      user.value = { employee_id: decoded.sub, name: decoded.name, role: decoded.role }
-
+      user.value = decodeJwtUser(data.access_token)
       await navigateTo("/")
     } catch (err: unknown) {
-      const fetchError = err as { data?: { detail?: string } }
-      error.value = fetchError?.data?.detail ?? "ログインに失敗しました。もう一度お試しください。"
+      error.value = extractApiError(err, "ログインに失敗しました。もう一度お試しください。")
       throw err
     } finally {
       isLoading.value = false
@@ -42,5 +71,5 @@ export const useAuthStore = defineStore("auth", () => {
     navigateTo("/login")
   }
 
-  return { token, user, isLoading, error, isLoggedIn, login, logout }
+  return { token, user, isLoading, error, isLoggedIn, clearError, preCheck, login, logout }
 })
