@@ -298,6 +298,18 @@ async function handleClockOut() {
           </div>
         </NuxtLink>
 
+        <NuxtLink to="/overtime" class="block">
+          <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer">
+            <div class="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0">
+              <UIcon name="i-heroicons-clock" class="w-7 h-7 text-orange-600" />
+            </div>
+            <div>
+              <p class="font-semibold text-gray-800">残業申請</p>
+              <p class="text-sm text-gray-500">残業の申請・履歴を確認する</p>
+            </div>
+          </div>
+        </NuxtLink>
+
         <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 flex items-center gap-4 opacity-50">
           <div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
             <UIcon name="i-heroicons-chart-bar" class="w-7 h-7 text-blue-600" />
@@ -315,9 +327,14 @@ async function handleClockOut() {
           <UIcon name="i-heroicons-check-badge" class="w-5 h-5 text-orange-500" />
           <h2 class="font-semibold text-gray-800">承認メニュー</h2>
         </div>
-        <UButton color="orange" variant="soft" icon="i-heroicons-clipboard-document-check" to="/leaves/approve">
-          休暇承認
-        </UButton>
+        <div class="flex gap-2 flex-wrap">
+          <UButton color="orange" variant="soft" icon="i-heroicons-clipboard-document-check" to="/leaves/approve">
+            休暇承認
+          </UButton>
+          <UButton color="orange" variant="soft" icon="i-heroicons-clock" to="/overtime/approve">
+            残業承認
+          </UButton>
+        </div>
       </div>
 
       <!-- 管理者メニュー -->
