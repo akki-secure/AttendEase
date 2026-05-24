@@ -9,6 +9,7 @@ from app.database import Base
 import app.models.user  # noqa: F401 — モデルを Base に登録するために必要
 import app.models.leave  # noqa: F401
 import app.models.leave_balance  # noqa: F401
+import app.models.overtime  # noqa: F401
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)

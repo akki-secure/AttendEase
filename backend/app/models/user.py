@@ -22,3 +22,4 @@ class User(Base):
     attendance_records = relationship("AttendanceRecord", back_populates="user", lazy="dynamic")
     leave_requests = relationship("LeaveRequest", foreign_keys="LeaveRequest.user_id", back_populates="user")
     leave_balances = relationship("LeaveBalance", back_populates="user")
+    overtime_requests = relationship("OvertimeRequest", foreign_keys="OvertimeRequest.user_id", back_populates="user")
