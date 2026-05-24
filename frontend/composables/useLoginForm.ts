@@ -42,15 +42,12 @@ export function useLoginForm() {
   })
 
   const onSubmitPassphrase = passphraseForm.handleSubmit(async (values) => {
-    try {
-      await authStore.login({
-        employee_id: storedCredentials.value.employee_id,
-        password: storedCredentials.value.password,
-        passphrase: values.passphrase,
-      })
-    } finally {
-      storedCredentials.value = { employee_id: "", password: "" }
-    }
+    await authStore.login({
+      employee_id: storedCredentials.value.employee_id,
+      password: storedCredentials.value.password,
+      passphrase: values.passphrase,
+    })
+    storedCredentials.value = { employee_id: "", password: "" }
   })
 
   function backToCredentials() {

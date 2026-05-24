@@ -286,6 +286,18 @@ async function handleClockOut() {
           </div>
         </NuxtLink>
 
+        <NuxtLink to="/leaves" class="block">
+          <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer">
+            <div class="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0">
+              <UIcon name="i-heroicons-calendar" class="w-7 h-7 text-green-600" />
+            </div>
+            <div>
+              <p class="font-semibold text-gray-800">休暇申請</p>
+              <p class="text-sm text-gray-500">休暇の申請・履歴を確認する</p>
+            </div>
+          </div>
+        </NuxtLink>
+
         <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 flex items-center gap-4 opacity-50">
           <div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
             <UIcon name="i-heroicons-chart-bar" class="w-7 h-7 text-blue-600" />
@@ -297,15 +309,31 @@ async function handleClockOut() {
         </div>
       </div>
 
+      <!-- 承認担当者・管理者メニュー -->
+      <div v-if="['MANAGER', 'ADMIN'].includes(authStore.user?.role ?? '')" class="bg-white rounded-xl p-6 shadow-sm border border-orange-200">
+        <div class="flex items-center gap-2 mb-4">
+          <UIcon name="i-heroicons-check-badge" class="w-5 h-5 text-orange-500" />
+          <h2 class="font-semibold text-gray-800">承認メニュー</h2>
+        </div>
+        <UButton color="orange" variant="soft" icon="i-heroicons-clipboard-document-check" to="/leaves/approve">
+          休暇承認
+        </UButton>
+      </div>
+
       <!-- 管理者メニュー -->
       <div v-if="authStore.user?.role === 'ADMIN'" class="bg-white rounded-xl p-6 shadow-sm border border-amber-200">
         <div class="flex items-center gap-2 mb-4">
           <UIcon name="i-heroicons-shield-check" class="w-5 h-5 text-amber-500" />
           <h2 class="font-semibold text-gray-800">管理者メニュー</h2>
         </div>
-        <UButton color="amber" variant="soft" icon="i-heroicons-user-plus" to="/admin/users">
-          ユーザー管理
-        </UButton>
+        <div class="flex gap-2 flex-wrap">
+          <UButton color="amber" variant="soft" icon="i-heroicons-user-plus" to="/admin/users">
+            ユーザー管理
+          </UButton>
+          <UButton color="amber" variant="soft" icon="i-heroicons-calendar-days" to="/admin/leave-balances">
+            有給残日数管理
+          </UButton>
+        </div>
       </div>
     </main>
   </div>
