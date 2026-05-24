@@ -12,7 +12,7 @@ class AttendanceRecord(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
-    clock_in: Ma    pped[datetime | None] = mapped_column(DateTime, nullable=True)
+    clock_in: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     clock_out: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     break_minutes: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     # PRESENT / CLOSED / CORRECTION_PENDING / CORRECTION_APPROVED

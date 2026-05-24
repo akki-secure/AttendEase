@@ -20,3 +20,5 @@ class User(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
     attendance_records = relationship("AttendanceRecord", back_populates="user", lazy="dynamic")
+    leave_requests = relationship("LeaveRequest", foreign_keys="LeaveRequest.user_id", back_populates="user")
+    leave_balances = relationship("LeaveBalance", back_populates="user")
