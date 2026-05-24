@@ -1,5 +1,5 @@
 import { defineStore } from "pinia"
-import type { AttendanceRecord, MonthlyAttendanceResponse, TodayStatusResponse } from "~/types/attendance"
+import type { AttendanceRecord, MonthlyAttendanceResponse, TodayStatusResponse, YearlySummaryResponse } from "~/types/attendance"
 import { extractApiError } from "~/utils/validation"
 
 export const useAttendanceStore = defineStore("attendance", () => {
@@ -67,6 +67,42 @@ export const useAttendanceStore = defineStore("attendance", () => {
     }
   }
 
+  async function fixClockIn(clockInIso: string): Promise<AttendanceRecord> {
+    isLoading.value = true
+    error.value = null
+    try {
+      const record = await $fetch<AttendanceRecord>(
+        `${config.public.apiBase}/api/v1/attendance/today/clock-in`,
+        { method: "PATCH", headers: authHeaders(), body: { clock_in: clockInIso } },
+      )
+      await fetchToday()
+      return record
+    } catch (err: unknown) {
+      error.value = extractApiError(err, "出勤時刻の修正に失敗しました")
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function fixClockOut(clockOutIso: string): Promise<AttendanceRecord> {
+    isLoading.value = true
+    error.value = null
+    try {
+      const record = await $fetch<AttendanceRecord>(
+        `${config.public.apiBase}/api/v1/attendance/today/clock-out`,
+        { method: "PATCH", headers: authHeaders(), body: { clock_out: clockOutIso } },
+      )
+      await fetchToday()
+      return record
+    } catch (err: unknown) {
+      error.value = extractApiError(err, "退勤時刻の修正に失敗しました")
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   async function requestCorrection(
     recordId: number,
     clockIn: string,
@@ -102,5 +138,12 @@ export const useAttendanceStore = defineStore("attendance", () => {
     )
   }
 
-  return { today, isLoading, error, fetchToday, clockIn, clockOut, requestCorrection, fetchMonthly }
+  async function fetchYearly(year: number): Promise<YearlySummaryResponse> {
+    return $fetch<YearlySummaryResponse>(
+      `${config.public.apiBase}/api/v1/attendance/me/yearly`,
+      { params: { year }, headers: authHeaders() },
+    )
+  }
+
+  return { today, isLoading, error, fetchToday, clockIn, clockOut, fixClockIn, fixClockOut, requestCorrection, fetchMonthly, fetchYearly }
 })

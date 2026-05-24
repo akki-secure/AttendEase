@@ -51,7 +51,9 @@ const isCurrentMonth = computed(() =>
 
 function fmt(iso: string | null) {
   if (!iso) return "--:--"
-  return new Date(iso).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })
+  // Append 'Z' if no timezone info so the string is treated as UTC, not local time
+  const utc = /[Z+]/.test(iso) ? iso : iso + "Z"
+  return new Date(utc).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })
 }
 function fmtMinutes(min: number | null) {
   if (min == null) return "--"
@@ -107,21 +109,21 @@ function fmtTotalHours(min: number) {
 <template>
   <div class="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
     <!-- ヘッダー -->
-    <header class="bg-white shadow-sm border-b border-gray-200">
+    <header class="bg-gradient-to-r from-blue-700 to-indigo-800 shadow-lg">
       <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
           <NuxtLink to="/" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <div class="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center shadow">
+            <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center shadow">
               <UIcon name="i-heroicons-clock" class="w-5 h-5 text-white" />
             </div>
-            <span class="text-lg font-bold text-gray-900">AttendEase</span>
+            <span class="text-lg font-bold text-white">AttendEase</span>
           </NuxtLink>
-          <UIcon name="i-heroicons-chevron-right" class="w-4 h-4 text-gray-400" />
-          <span class="text-sm text-gray-600 font-medium">勤怠一覧</span>
+          <UIcon name="i-heroicons-chevron-right" class="w-4 h-4 text-blue-300" />
+          <span class="text-sm text-blue-100 font-medium">勤怠一覧</span>
         </div>
         <div class="flex items-center gap-3">
-          <span class="text-sm text-gray-500 hidden sm:block">{{ authStore.user?.name }} さん</span>
-          <UButton color="gray" variant="soft" size="sm" icon="i-heroicons-arrow-right-on-rectangle" @click="authStore.logout()">
+          <span class="text-sm text-blue-100 hidden sm:block">{{ authStore.user?.name }} さん</span>
+          <UButton variant="ghost" size="sm" icon="i-heroicons-arrow-right-on-rectangle" class="!bg-red-500 !text-white hover:!bg-red-600 transition-all duration-200 font-medium rounded-lg" @click="authStore.logout()">
             ログアウト
           </UButton>
         </div>

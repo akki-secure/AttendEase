@@ -36,6 +36,7 @@ async def create_user(
     user = User(
         employee_id=payload.employee_id,
         name=payload.name,
+        email=payload.email,
         hashed_password=get_password_hash(payload.password),
         role=payload.role,
     )
@@ -49,6 +50,7 @@ async def create_user(
         name=user.name,
         role=user.role,
         is_active=user.is_active,
+        email=user.email,
     )
 
 

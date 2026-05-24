@@ -29,3 +29,16 @@ export interface MonthlyAttendanceResponse {
   total_work_minutes: number
   total_overtime_minutes: number
 }
+
+export interface MonthlySummaryItem {
+  month: string
+  work_minutes: number
+  overtime_minutes: number
+}
+
+export interface YearlySummaryResponse {
+  year: number
+  months: MonthlySummaryItem[]
+  total_work_minutes: number
+  total_overtime_minutes: number
+}

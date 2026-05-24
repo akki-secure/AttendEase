@@ -12,8 +12,12 @@ from app.schemas.attendance import (
     ClockInRequest,
     ClockOutRequest,
     CorrectionRequest,
+    FixClockInRequest,
+    FixClockOutRequest,
     MonthlyAttendanceResponse,
+    MonthlySummaryItem,
     TodayStatusResponse,
+    YearlySummaryResponse,
 )
 
 router = APIRouter()
@@ -21,18 +25,28 @@ router = APIRouter()
 _STANDARD_WORK_MINUTES = 480  # 8 時間
 
 
+def _ensure_utc(dt: datetime | None) -> datetime | None:
+    """Naive datetimes from SQLite are UTC – attach tzinfo so Pydantic serializes with offset."""
+    if dt is None:
+        return None
+    return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
+
+
 def _to_response(record: AttendanceRecord) -> AttendanceResponse:
+    clock_in = _ensure_utc(record.clock_in)
+    clock_out = _ensure_utc(record.clock_out)
+
     work_minutes: int | None = None
-    if record.clock_in and record.clock_out:
-        delta = int((record.clock_out - record.clock_in).total_seconds() // 60)
+    if clock_in and clock_out:
+        delta = int((clock_out - clock_in).total_seconds() // 60)
         work_minutes = max(delta - record.break_minutes, 0)
 
     return AttendanceResponse(
         id=record.id,
         user_id=record.user_id,
         date=record.date,
-        clock_in=record.clock_in,
-        clock_out=record.clock_out,
+        clock_in=clock_in,
+        clock_out=clock_out,
         break_minutes=record.break_minutes,
         status=record.status,
         correction_note=record.correction_note,
@@ -124,7 +138,7 @@ async def clock_out(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="現在の状態では退勤打刻できません",
         )
-    if record.clock_in and clock_out_dt <= record.clock_in:
+    if record.clock_in and clock_out_dt <= _ensure_utc(record.clock_in):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="退勤時刻は出勤時刻より後にしてください",
@@ -132,6 +146,65 @@ async def clock_out(
 
     record.clock_out = clock_out_dt
     record.status = "CLOSED"
+    await db.commit()
+    await db.refresh(record)
+    return _to_response(record)
+
+
+@router.patch("/today/clock-in", response_model=AttendanceResponse)
+async def fix_today_clock_in(
+    payload: FixClockInRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> AttendanceResponse:
+    """出勤中のみ: 本日の出勤時刻を直接修正する（承認不要）"""
+    today = datetime.now(timezone.utc).date()
+    record = await _get_today_record(db, current_user.id, today)
+    if record is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="本日の打刻記録が見つかりません")
+    if record.status not in ("PRESENT", "CLOSED"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="出勤中または退勤済みのみ出勤時刻を修正できます")
+
+    clock_in_dt = payload.clock_in
+    if clock_in_dt.tzinfo is None:
+        clock_in_dt = clock_in_dt.replace(tzinfo=timezone.utc)
+
+    if record.clock_out and clock_in_dt >= _ensure_utc(record.clock_out):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="出勤時刻は退勤時刻より前にしてください",
+        )
+
+    record.clock_in = clock_in_dt
+    await db.commit()
+    await db.refresh(record)
+    return _to_response(record)
+
+
+@router.patch("/today/clock-out", response_model=AttendanceResponse)
+async def fix_today_clock_out(
+    payload: FixClockOutRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> AttendanceResponse:
+    """退勤済みのみ: 本日の退勤時刻を直接修正する（当日のみ承認不要）"""
+    today = datetime.now(timezone.utc).date()
+    record = await _get_today_record(db, current_user.id, today)
+    if record is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="本日の打刻記録が見つかりません")
+    if record.status != "CLOSED":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="退勤済みのみ退勤時刻を修正できます")
+
+    clock_out_dt = payload.clock_out
+    if clock_out_dt.tzinfo is None:
+        clock_out_dt = clock_out_dt.replace(tzinfo=timezone.utc)
+    if record.clock_in and clock_out_dt <= _ensure_utc(record.clock_in):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="退勤時刻は出勤時刻より後にしてください",
+        )
+
+    record.clock_out = clock_out_dt
     await db.commit()
     await db.refresh(record)
     return _to_response(record)
@@ -170,6 +243,44 @@ async def get_my_monthly(
         total_work_minutes=total_work,
         total_overtime_minutes=total_overtime,
     )
+
+
+@router.get("/me/yearly", response_model=YearlySummaryResponse)
+async def get_my_yearly(
+    year: int = Query(..., description="年（例: 2026）"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> YearlySummaryResponse:
+    result = await db.execute(
+        select(AttendanceRecord).where(
+            and_(
+                AttendanceRecord.user_id == current_user.id,
+                extract("year", AttendanceRecord.date) == year,
+            )
+        ).order_by(AttendanceRecord.date)
+    )
+    records = result.scalars().all()
+
+    monthly: dict[str, MonthlySummaryItem] = {}
+    for mon in range(1, 13):
+        key = f"{year}-{mon:02d}"
+        monthly[key] = MonthlySummaryItem(month=key, work_minutes=0, overtime_minutes=0)
+
+    for rec in records:
+        key = f"{year}-{rec.date.month:02d}"
+        if rec.clock_in and rec.clock_out:
+            ci = _ensure_utc(rec.clock_in)
+            co = _ensure_utc(rec.clock_out)
+            if ci and co:
+                work = max(int((co - ci).total_seconds() // 60) - rec.break_minutes, 0)
+                ot = max(work - _STANDARD_WORK_MINUTES, 0)
+                monthly[key].work_minutes += work
+                monthly[key].overtime_minutes += ot
+
+    months = list(monthly.values())
+    total_work = sum(m.work_minutes for m in months)
+    total_ot = sum(m.overtime_minutes for m in months)
+    return YearlySummaryResponse(year=year, months=months, total_work_minutes=total_work, total_overtime_minutes=total_ot)
 
 
 @router.patch("/{record_id}/correction-request", response_model=AttendanceResponse)

@@ -1,7 +1,11 @@
 export interface LoginRequest {
   employee_id: string
-  password: string
-  passphrase: string
+  otp: string
+}
+
+export interface PreCheckResponse {
+  ok: boolean
+  email_hint: string
 }
 
 export interface TokenResponse {
@@ -20,6 +24,7 @@ export interface UserCreateRequest {
   employee_id: string
   password: string
   role: "EMPLOYEE" | "MANAGER" | "ADMIN"
+  email?: string
 }
 
 export interface UserResponse {
@@ -28,4 +33,5 @@ export interface UserResponse {
   name: string
   role: string
   is_active: boolean
+  email?: string
 }

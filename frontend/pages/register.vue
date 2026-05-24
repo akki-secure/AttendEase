@@ -8,6 +8,7 @@ const router = useRouter()
 
 const employeeId = ref("")
 const name = ref("")
+const email = ref("")
 const password = ref("")
 const confirmPassword = ref("")
 const showPassword = ref(false)
@@ -18,6 +19,7 @@ const successMessage = ref<string | null>(null)
 const errors = reactive({
   employee_id: "",
   name: "",
+  email: "",
   password: "",
   confirmPassword: "",
 })
@@ -27,6 +29,11 @@ import { ASCII_ONLY } from "~/utils/validation"
 function validate() {
   errors.employee_id = employeeId.value.trim() ? "" : "社員IDを入力してください"
   errors.name = name.value.trim() ? "" : "氏名を入力してください"
+  if (email.value.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) {
+    errors.email = "正しいメールアドレスを入力してください"
+  } else {
+    errors.email = ""
+  }
   if (!password.value) {
     errors.password = "パスワードを入力してください"
   } else if (password.value.length < 8) {
@@ -51,6 +58,7 @@ async function onSubmit() {
       body: {
         employee_id: employeeId.value,
         name: name.value,
+        ...(email.value.trim() ? { email: email.value.trim() } : {}),
         password: password.value,
       },
     })
@@ -108,6 +116,21 @@ async function onSubmit() {
           :disabled="isSubmitting"
           autocomplete="name"
         />
+      </UFormGroup>
+
+      <UFormGroup label="メールアドレス（任意）" name="email" :error="errors.email">
+        <UInput
+          v-model="email"
+          type="email"
+          placeholder="例: yamada@example.com"
+          size="lg"
+          icon="i-heroicons-envelope"
+          :disabled="isSubmitting"
+          autocomplete="email"
+        />
+        <template #hint>
+          <span class="text-xs text-gray-400">ログイン時のOTP認証コード送信先（後から設定可）</span>
+        </template>
       </UFormGroup>
 
       <UFormGroup label="パスワード" name="password" :error="errors.password">

@@ -15,44 +15,87 @@ const credentialsSchema = toTypedSchema(
   })
 )
 
-const passphraseSchema = toTypedSchema(
+const otpSchema = toTypedSchema(
   z.object({
-    passphrase: z.string().min(1, "合言葉を入力してください"),
+    otp: z
+      .string()
+      .length(6, "6桁の数字を入力してください")
+      .regex(/^\d{6}$/, "半角数字6桁を入力してください"),
   })
 )
 
 export function useLoginForm() {
   const authStore = useAuthStore()
-  const step = ref<"credentials" | "passphrase">("credentials")
-  const storedCredentials = ref({ employee_id: "", password: "" })
+  const step = ref<"credentials" | "otp">("credentials")
+  const storedEmployeeId = ref("")
+  const emailHint = ref("")
+
+  // 再送信クールダウン
+  const resendCooldown = ref(0)
+  const isResending = ref(false)
+  let cooldownTimer: ReturnType<typeof setInterval> | null = null
+
+  function startCooldown() {
+    resendCooldown.value = 60
+    if (cooldownTimer) clearInterval(cooldownTimer)
+    cooldownTimer = setInterval(() => {
+      resendCooldown.value--
+      if (resendCooldown.value <= 0) {
+        clearInterval(cooldownTimer!)
+        cooldownTimer = null
+      }
+    }, 1000)
+  }
 
   // ステップ1: 社員ID + パスワード
   const credentialsForm = useForm({ validationSchema: credentialsSchema, validateOnMount: false })
   const [employeeId, employeeIdAttrs] = credentialsForm.defineField("employee_id", { validateOnModelUpdate: true })
   const [password, passwordAttrs] = credentialsForm.defineField("password", { validateOnModelUpdate: true })
 
-  // ステップ2: 合言葉
-  const passphraseForm = useForm({ validationSchema: passphraseSchema, validateOnMount: false })
-  const [passphrase, passphraseAttrs] = passphraseForm.defineField("passphrase", { validateOnModelUpdate: true })
+  // ステップ2: OTP
+  const otpForm = useForm({ validationSchema: otpSchema, validateOnMount: false })
+  const [otp, otpAttrs] = otpForm.defineField("otp", { validateOnModelUpdate: true })
 
   const onSubmitCredentials = credentialsForm.handleSubmit(async (values) => {
-    await authStore.preCheck({ employee_id: values.employee_id, password: values.password })
-    storedCredentials.value = { employee_id: values.employee_id, password: values.password }
-    step.value = "passphrase"
+    const res = await authStore.preCheck({ employee_id: values.employee_id, password: values.password })
+    storedEmployeeId.value = values.employee_id
+    emailHint.value = res.email_hint
+    step.value = "otp"
+    startCooldown()
   })
 
-  const onSubmitPassphrase = passphraseForm.handleSubmit(async (values) => {
+  const onSubmitOtp = otpForm.handleSubmit(async (values) => {
     await authStore.login({
-      employee_id: storedCredentials.value.employee_id,
-      password: storedCredentials.value.password,
-      passphrase: values.passphrase,
+      employee_id: storedEmployeeId.value,
+      otp: values.otp,
     })
-    storedCredentials.value = { employee_id: "", password: "" }
+    storedEmployeeId.value = ""
   })
+
+  async function resendOtp() {
+    if (resendCooldown.value > 0 || isResending.value) return
+    isResending.value = true
+    authStore.clearError()
+    try {
+      const storedPassword = credentialsForm.values.password ?? ""
+      const res = await authStore.preCheck({
+        employee_id: storedEmployeeId.value,
+        password: storedPassword,
+      })
+      emailHint.value = res.email_hint
+      otpForm.resetForm()
+      startCooldown()
+    } finally {
+      isResending.value = false
+    }
+  }
 
   function backToCredentials() {
     step.value = "credentials"
-    storedCredentials.value = { employee_id: "", password: "" }
+    storedEmployeeId.value = ""
+    emailHint.value = ""
+    if (cooldownTimer) clearInterval(cooldownTimer)
+    resendCooldown.value = 0
     authStore.clearError()
   }
 
@@ -62,14 +105,18 @@ export function useLoginForm() {
     employeeIdAttrs,
     password,
     passwordAttrs,
-    passphrase,
-    passphraseAttrs,
+    otp,
+    otpAttrs,
+    emailHint,
+    resendCooldown,
+    isResending,
     credentialsErrors: credentialsForm.errors,
-    passphraseErrors: passphraseForm.errors,
+    otpErrors: otpForm.errors,
     isSubmittingCredentials: credentialsForm.isSubmitting,
-    isSubmittingPassphrase: passphraseForm.isSubmitting,
+    isSubmittingOtp: otpForm.isSubmitting,
     onSubmitCredentials,
-    onSubmitPassphrase,
+    onSubmitOtp,
+    resendOtp,
     backToCredentials,
     authStore,
   }

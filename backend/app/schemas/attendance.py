@@ -31,6 +31,14 @@ class ClockOutRequest(BaseModel):
     clock_out: datetime | None = None  # None のときサーバー現在時刻を使用
 
 
+class FixClockInRequest(BaseModel):
+    clock_in: datetime
+
+
+class FixClockOutRequest(BaseModel):
+    clock_out: datetime
+
+
 class CorrectionRequest(BaseModel):
     clock_in: datetime
     clock_out: datetime
@@ -43,3 +51,16 @@ class MonthlyAttendanceResponse(BaseModel):
     records: list[AttendanceResponse]
     total_work_minutes: int
     total_overtime_minutes: int  # 所定 480 分超
+
+
+class MonthlySummaryItem(BaseModel):
+    month: str       # "2026-01"
+    work_minutes: int
+    overtime_minutes: int
+
+
+class YearlySummaryResponse(BaseModel):
+    year: int
+    months: list[MonthlySummaryItem]
+    total_work_minutes: int
+    total_overtime_minutes: int
