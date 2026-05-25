@@ -532,13 +532,24 @@ const annualOtPct  = computed(() => Math.min((annualOtMin.value / OT_LIMIT_YEAR)
           </div>
         </NuxtLink>
 
-        <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 flex items-center gap-4 opacity-50">
+        <NuxtLink v-if="['MANAGER', 'ADMIN'].includes(authStore.user?.role ?? '')" to="/reports" class="block">
+          <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer">
+            <div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+              <UIcon name="i-heroicons-chart-bar" class="w-7 h-7 text-blue-600" />
+            </div>
+            <div>
+              <p class="font-semibold text-gray-800">勤怠レポート</p>
+              <p class="text-sm text-gray-500">月次サマリー・CSV出力</p>
+            </div>
+          </div>
+        </NuxtLink>
+        <div v-else class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 flex items-center gap-4 opacity-40">
           <div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
             <UIcon name="i-heroicons-chart-bar" class="w-7 h-7 text-blue-600" />
           </div>
           <div>
             <p class="font-semibold text-gray-800">勤怠レポート</p>
-            <p class="text-sm text-gray-500">近日公開予定</p>
+            <p class="text-sm text-gray-500">管理者・マネージャー向け</p>
           </div>
         </div>
       </div>
@@ -555,6 +566,9 @@ const annualOtPct  = computed(() => Math.min((annualOtMin.value / OT_LIMIT_YEAR)
           </UButton>
           <UButton color="orange" variant="soft" icon="i-heroicons-clock" to="/overtime/approve">
             残業承認
+          </UButton>
+          <UButton color="indigo" variant="soft" icon="i-heroicons-chart-bar" to="/reports">
+            勤怠レポート
           </UButton>
         </div>
       </div>
