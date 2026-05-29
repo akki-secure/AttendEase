@@ -183,5 +183,5 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)) -> To
         user.failed_login_count = 0
     await db.commit()
 
-    token = create_access_token({"sub": user.employee_id, "name": user.name, "role": user.role})
+    token = create_access_token({"sub": user.employee_id, "name": user.name, "role": user.role, "user_id": user.id})
     return TokenResponse(access_token=token)

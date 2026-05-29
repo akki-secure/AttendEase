@@ -3,6 +3,7 @@ import { toTypedSchema } from "@vee-validate/zod"
 import { z } from "zod"
 import { useAuthStore } from "~/stores/auth"
 import { ASCII_ONLY } from "~/utils/validation"
+import { unlockAudio } from "~/stores/notifications"
 
 const credentialsSchema = toTypedSchema(
   z.object({
@@ -70,6 +71,7 @@ export function useLoginForm() {
       otp: values.otp,
     })
     storedEmployeeId.value = ""
+    unlockAudio()
   })
 
   async function resendOtp() {

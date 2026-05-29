@@ -14,6 +14,7 @@ export interface TokenResponse {
 }
 
 export interface AuthUser {
+  id: number
   employee_id: string
   name: string
   role: "EMPLOYEE" | "MANAGER" | "ADMIN"

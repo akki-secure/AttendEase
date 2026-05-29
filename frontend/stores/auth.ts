@@ -13,7 +13,7 @@ export const useAuthStore = defineStore("auth", () => {
 
   function decodeJwtUser(jwt: string): AuthUser {
     const decoded = JSON.parse(atob(jwt.split(".")[1]))
-    return { employee_id: decoded.sub, name: decoded.name, role: decoded.role }
+    return { id: decoded.user_id, employee_id: decoded.sub, name: decoded.name, role: decoded.role }
   }
 
   // トークンが残っていればリロード後も user を復元

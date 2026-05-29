@@ -138,7 +138,7 @@ async def clock_out(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="現在の状態では退勤打刻できません",
         )
-    if record.clock_in and clock_out_dt <= _ensure_utc(record.clock_in):
+    if record.clock_in and clock_out_dt < _ensure_utc(record.clock_in):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="退勤時刻は出勤時刻より後にしてください",
@@ -198,7 +198,7 @@ async def fix_today_clock_out(
     clock_out_dt = payload.clock_out
     if clock_out_dt.tzinfo is None:
         clock_out_dt = clock_out_dt.replace(tzinfo=timezone.utc)
-    if record.clock_in and clock_out_dt <= _ensure_utc(record.clock_in):
+    if record.clock_in and clock_out_dt < _ensure_utc(record.clock_in):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="退勤時刻は出勤時刻より後にしてください",
@@ -299,7 +299,7 @@ async def request_correction(
     if record is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="打刻記録が見つかりません")
 
-    if payload.clock_out <= payload.clock_in:
+    if payload.clock_out < payload.clock_in:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="退勤時刻は出勤時刻より後にしてください",

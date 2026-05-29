@@ -3,6 +3,7 @@ import type { YearlySummaryResponse } from "~/types/attendance"
 
 const authStore = useAuthStore()
 const attendanceStore = useAttendanceStore()
+const notifStore = useNotificationsStore()
 const toast = useToast()
 
 if (!authStore.isLoggedIn) {
@@ -30,6 +31,21 @@ function toIso(timeStr: string): string {
   const [hour, minute] = timeStr.split(":").map(Number)
   const d = new Date()
   d.setHours(hour, minute, 0, 0)
+  return d.toISOString()
+}
+
+// 退勤打刻専用: 計算結果が出勤時刻より前になる場合は翌日として扱う（夜間出勤対応）
+function toIsoClockOut(timeStr: string, clockInIso?: string | null): string {
+  const [hour, minute] = timeStr.split(":").map(Number)
+  const d = new Date()
+  d.setHours(hour, minute, 0, 0)
+  if (clockInIso) {
+    const utc = /[Z+]/.test(clockInIso) ? clockInIso : clockInIso + "Z"
+    const clockInDt = new Date(utc)
+    if (d < clockInDt) {
+      d.setDate(d.getDate() + 1)
+    }
+  }
   return d.toISOString()
 }
 
@@ -93,7 +109,7 @@ function startFixClockOut() {
 
 async function handleFixClockOut() {
   try {
-    await attendanceStore.fixClockOut(toIso(fixClockOutTime.value))
+    await attendanceStore.fixClockOut(toIsoClockOut(fixClockOutTime.value, attendanceStore.today?.record?.clock_in))
     toast.add({ title: `退勤時刻を ${fixClockOutTime.value} に修正しました`, color: "blue", icon: "i-heroicons-check-circle" })
     isFixingClockOut.value = false
   } catch {
@@ -150,7 +166,7 @@ async function handleClockIn() {
 
 async function handleClockOut() {
   try {
-    await attendanceStore.clockOut(toIso(clockOutTime.value))
+    await attendanceStore.clockOut(toIsoClockOut(clockOutTime.value, attendanceStore.today?.record?.clock_in))
     toast.add({ title: `${clockOutTime.value} に退勤打刻しました`, color: "blue", icon: "i-heroicons-check-circle" })
   } catch {
     toast.add({ title: attendanceStore.error ?? "エラーが発生しました", color: "red", icon: "i-heroicons-exclamation-circle" })
@@ -200,6 +216,18 @@ const annualOtPct  = computed(() => Math.min((annualOtMin.value / OT_LIMIT_YEAR)
         </div>
         <div class="flex items-center gap-3">
           <span class="text-sm text-blue-100 hidden sm:block">{{ authStore.user?.name }} さん</span>
+          <!-- 通知ベル -->
+          <NuxtLink to="/notifications" class="relative">
+            <UButton variant="ghost" size="sm" icon="i-heroicons-bell" class="!text-white hover:!bg-white/20 rounded-lg" />
+            <span
+              v-if="notifStore.unreadCount > 0"
+              class="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1"
+            >{{ notifStore.unreadCount > 99 ? '99+' : notifStore.unreadCount }}</span>
+          </NuxtLink>
+          <!-- プロフィール -->
+          <NuxtLink to="/profile">
+            <UButton variant="ghost" size="sm" icon="i-heroicons-user-circle" class="!text-white hover:!bg-white/20 rounded-lg" />
+          </NuxtLink>
           <UButton
             variant="ghost" size="sm"
             icon="i-heroicons-arrow-right-on-rectangle"
@@ -552,6 +580,34 @@ const annualOtPct  = computed(() => Math.min((annualOtMin.value / OT_LIMIT_YEAR)
             <p class="text-sm text-gray-500">管理者・マネージャー向け</p>
           </div>
         </div>
+
+        <NuxtLink to="/notifications" class="block">
+          <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer">
+            <div class="relative w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
+              <UIcon name="i-heroicons-bell" class="w-7 h-7 text-indigo-600" />
+              <span
+                v-if="notifStore.unreadCount > 0"
+                class="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1"
+              >{{ notifStore.unreadCount }}</span>
+            </div>
+            <div>
+              <p class="font-semibold text-gray-800">通知</p>
+              <p class="text-sm text-gray-500">申請・承認の通知を確認する</p>
+            </div>
+          </div>
+        </NuxtLink>
+
+        <NuxtLink to="/profile" class="block">
+          <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer">
+            <div class="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
+              <UIcon name="i-heroicons-user-circle" class="w-7 h-7 text-gray-600" />
+            </div>
+            <div>
+              <p class="font-semibold text-gray-800">プロフィール設定</p>
+              <p class="text-sm text-gray-500">氏名・メール・パスワードを変更する</p>
+            </div>
+          </div>
+        </NuxtLink>
       </div>
 
       <!-- 承認担当者・管理者メニュー -->

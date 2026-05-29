@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -6,6 +7,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.deps import get_current_user, get_db, require_manager_or_admin
+from app.core.email import (
+    send_overtime_alert_email,
+    send_overtime_request_email,
+    send_overtime_reviewed_email,
+)
+from app.models.notification import Notification
 from app.models.overtime import OvertimeRequest
 from app.models.user import User
 from app.schemas.overtime import (
@@ -52,6 +59,14 @@ async def _get_monthly_approved_minutes(
     return result.scalar_one_or_none() or 0
 
 
+def _send_bg(emails: list[tuple]) -> None:
+    for fn, args in emails:
+        try:
+            fn(*args)
+        except Exception:
+            pass
+
+
 @router.post("", response_model=OvertimeRequestResponse, status_code=status.HTTP_201_CREATED)
 async def create_overtime(
     payload: OvertimeCreateRequest,
@@ -67,7 +82,6 @@ async def create_overtime(
 
     minutes = int((end - start).total_seconds() / 60)
 
-    # 同日の重複チェック
     overlap = await db.execute(
         select(OvertimeRequest).where(
             and_(
@@ -102,7 +116,27 @@ async def create_overtime(
         .where(OvertimeRequest.id == record.id)
     )
     record = result.scalar_one()
+
+    date_str = payload.date.strftime("%Y/%m/%d")
+    hours = minutes // 60
+    mins = minutes % 60
+    duration = f"{hours}時間{mins}分" if hours else f"{mins}分"
+    message = f"{current_user.name} さんから残業申請が届きました（{date_str} {duration}）"
+
+    managers_result = await db.execute(
+        select(User).where(User.role.in_(["MANAGER", "ADMIN"]), User.is_active.is_(True))
+    )
+    managers = managers_result.scalars().all()
+    email_tasks = []
+    for m in managers:
+        db.add(Notification(user_id=m.id, type="OVERTIME_REQUEST", message=message))
+        if m.email:
+            email_tasks.append((send_overtime_request_email, (m.email, current_user.name, date_str, minutes)))
+
     await db.commit()
+
+    asyncio.get_event_loop().run_in_executor(None, _send_bg, email_tasks)
+
     return _to_response(record)
 
 
@@ -216,6 +250,33 @@ async def approve_overtime(
     record.reviewer_id = current_user.id
     record.reviewer_comment = payload.comment
     record.reviewed_at = datetime.now(timezone.utc)
+
+    date_str = record.date.strftime("%Y/%m/%d")
+    hours = record.minutes // 60
+    mins = record.minutes % 60
+    duration = f"{hours}時間{mins}分" if hours else f"{mins}分"
+    message = f"残業申請（{date_str} {duration}）が承認されました"
+    db.add(Notification(user_id=record.user_id, type="OVERTIME_APPROVED", message=message))
+
+    # 月次残業アラートチェック
+    year = record.date.year
+    month = record.date.month
+    current_total = await _get_monthly_approved_minutes(db, record.user_id, year, month)
+    new_total = current_total + record.minutes
+
+    email_tasks = [(send_overtime_reviewed_email, (record.user.email, record.user.name, "APPROVED", payload.comment, date_str))] if record.user.email else []
+
+    if new_total >= MONTHLY_ALERT_MINUTES and current_total < MONTHLY_ALERT_MINUTES:
+        alert_msg = f"{year}年{month}月の残業時間が {round(new_total / 60, 1)}h に達しました（アラート閾値: {MONTHLY_ALERT_MINUTES // 60}h）"
+        db.add(Notification(user_id=record.user_id, type="OVERTIME_ALERT", message=alert_msg))
+        managers_result = await db.execute(
+            select(User).where(User.role.in_(["MANAGER", "ADMIN"]), User.is_active.is_(True))
+        )
+        for m in managers_result.scalars().all():
+            db.add(Notification(user_id=m.id, type="OVERTIME_ALERT", message=f"{record.user.name} さんの{alert_msg}"))
+            if m.email:
+                email_tasks.append((send_overtime_alert_email, (m.email, record.user.name, year, month, new_total)))
+
     await db.commit()
     await db.refresh(record)
 
@@ -225,6 +286,9 @@ async def approve_overtime(
         .where(OvertimeRequest.id == record.id)
     )
     record = result2.scalar_one()
+
+    asyncio.get_event_loop().run_in_executor(None, _send_bg, email_tasks)
+
     return _to_response(record)
 
 
@@ -250,6 +314,16 @@ async def reject_overtime(
     record.reviewer_id = current_user.id
     record.reviewer_comment = payload.comment
     record.reviewed_at = datetime.now(timezone.utc)
+
+    date_str = record.date.strftime("%Y/%m/%d")
+    hours = record.minutes // 60
+    mins = record.minutes % 60
+    duration = f"{hours}時間{mins}分" if hours else f"{mins}分"
+    message = f"残業申請（{date_str} {duration}）が否認されました"
+    if payload.comment:
+        message += f"：{payload.comment}"
+    db.add(Notification(user_id=record.user_id, type="OVERTIME_REJECTED", message=message))
+
     await db.commit()
 
     result2 = await db.execute(
@@ -258,4 +332,12 @@ async def reject_overtime(
         .where(OvertimeRequest.id == record.id)
     )
     record = result2.scalar_one()
+
+    if record.user.email:
+        asyncio.get_event_loop().run_in_executor(
+            None,
+            _send_bg,
+            [(send_overtime_reviewed_email, (record.user.email, record.user.name, "REJECTED", payload.comment, date_str))],
+        )
+
     return _to_response(record)
