@@ -63,6 +63,9 @@ def _csv_response(output: io.StringIO, filename: str) -> StreamingResponse:
 # ── Schemas ────────────────────────────────────────────────────────────────
 
 
+_WORK_TYPE_LABEL = {"office": "出社", "remote": "リモートワーク"}
+
+
 class UserMonthlySummary(BaseModel):
     user_id: int
     employee_id: str
@@ -71,6 +74,8 @@ class UserMonthlySummary(BaseModel):
     total_work_minutes: int
     total_overtime_minutes: int
     leave_days: int
+    office_days: int
+    remote_days: int
 
 
 class MonthlySummaryResponse(BaseModel):
@@ -125,6 +130,8 @@ async def get_monthly_summary(
         work_days = sum(1 for r in recs if r.clock_in is not None)
         total_work = 0
         total_ot = 0
+        office_days = sum(1 for r in recs if r.work_type == "office")
+        remote_days = sum(1 for r in recs if r.work_type == "remote")
         for r in recs:
             if r.clock_in and r.clock_out:
                 ci = _ensure_utc(r.clock_in)
@@ -141,6 +148,8 @@ async def get_monthly_summary(
             total_work_minutes=total_work,
             total_overtime_minutes=total_ot,
             leave_days=leave_days_by_user.get(u.id, 0),
+            office_days=office_days,
+            remote_days=remote_days,
         ))
 
     return MonthlySummaryResponse(
@@ -173,7 +182,7 @@ async def download_attendance_csv(
 
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["社員ID", "氏名", "日付", "出勤時刻", "退勤時刻", "休憩(分)", "実働時間", "残業時間", "ステータス", "修正メモ"])
+    writer.writerow(["社員ID", "氏名", "日付", "出社形態", "出勤時刻", "退勤時刻", "休憩(分)", "実働時間", "残業時間", "ステータス", "修正メモ"])
 
     for r in att_result.scalars().all():
         u = users.get(r.user_id)
@@ -189,6 +198,7 @@ async def download_attendance_csv(
             u.employee_id if u else "",
             u.name if u else "",
             r.date.strftime("%Y-%m-%d"),
+            _WORK_TYPE_LABEL.get(r.work_type, "") if r.work_type else "",
             _fmt_dt(r.clock_in),
             _fmt_dt(r.clock_out),
             r.break_minutes,

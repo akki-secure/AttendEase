@@ -9,6 +9,8 @@ interface UserMonthlySummary {
   total_work_minutes: number
   total_overtime_minutes: number
   leave_days: number
+  office_days: number
+  remote_days: number
 }
 
 interface MonthlySummaryResponse {
@@ -200,6 +202,8 @@ const { roleTheme } = useRoleTheme()
                 <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">社員ID</th>
                 <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">氏名</th>
                 <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">出勤日数</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">出社</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">リモート</th>
                 <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">実働時間</th>
                 <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">残業時間</th>
                 <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">有給取得</th>
@@ -214,6 +218,8 @@ const { roleTheme } = useRoleTheme()
                 <td class="px-4 py-3 text-gray-500 font-mono text-xs">{{ u.employee_id }}</td>
                 <td class="px-4 py-3 font-medium text-gray-800">{{ u.name }}</td>
                 <td class="px-4 py-3 text-right text-gray-700">{{ u.work_days }}日</td>
+                <td class="px-4 py-3 text-right text-green-700">{{ u.office_days > 0 ? `${u.office_days}日` : '—' }}</td>
+                <td class="px-4 py-3 text-right text-blue-700">{{ u.remote_days > 0 ? `${u.remote_days}日` : '—' }}</td>
                 <td class="px-4 py-3 text-right text-gray-700">{{ fmtMinutes(u.total_work_minutes) }}</td>
                 <td class="px-4 py-3 text-right" :class="otColor(u.total_overtime_minutes)">
                   <div class="flex items-center justify-end gap-1">
@@ -233,6 +239,12 @@ const { roleTheme } = useRoleTheme()
                 <td class="px-4 py-3 text-brand-700" colspan="2">合計</td>
                 <td class="px-4 py-3 text-right text-brand-700">
                   {{ summary.users.reduce((s, u) => s + u.work_days, 0) }}日
+                </td>
+                <td class="px-4 py-3 text-right text-green-700">
+                  {{ summary.users.reduce((s, u) => s + u.office_days, 0) }}日
+                </td>
+                <td class="px-4 py-3 text-right text-blue-700">
+                  {{ summary.users.reduce((s, u) => s + u.remote_days, 0) }}日
                 </td>
                 <td class="px-4 py-3 text-right text-brand-700">{{ fmtMinutes(summary.total_work_minutes) }}</td>
                 <td class="px-4 py-3 text-right text-brand-700">{{ fmtMinutes(summary.total_overtime_minutes) }}</td>

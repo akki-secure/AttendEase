@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -11,6 +12,7 @@ class AttendanceResponse(BaseModel):
     clock_out: datetime | None
     break_minutes: int
     status: str
+    work_type: Optional[str] = None
     correction_note: str | None
     work_minutes: int | None  # clock_out - clock_in - break_minutes（退勤後のみ）
 
@@ -25,6 +27,7 @@ class TodayStatusResponse(BaseModel):
 
 class ClockInRequest(BaseModel):
     clock_in: datetime | None = None  # None のときサーバー現在時刻を使用
+    work_type: Optional[Literal["office", "remote"]] = None
 
 
 class ClockOutRequest(BaseModel):
@@ -33,6 +36,7 @@ class ClockOutRequest(BaseModel):
 
 class FixClockInRequest(BaseModel):
     clock_in: datetime
+    work_type: Optional[Literal["office", "remote"]] = None
 
 
 class FixClockOutRequest(BaseModel):
@@ -44,6 +48,14 @@ class CorrectionRequest(BaseModel):
     clock_out: datetime
     break_minutes: int = Field(ge=0, default=0)
     note: str = Field(min_length=1, max_length=500)
+
+
+class PastRecordRequest(BaseModel):
+    date: date
+    clock_in: datetime
+    clock_out: datetime
+    work_type: Optional[Literal["office", "remote"]] = None
+    break_minutes: int = Field(ge=0, default=60)
 
 
 class MonthlyAttendanceResponse(BaseModel):

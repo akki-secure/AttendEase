@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { YearlySummaryResponse } from "~/types/attendance"
+import type { WorkType, YearlySummaryResponse } from "~/types/attendance"
 
 const authStore = useAuthStore()
 const attendanceStore = useAttendanceStore()
@@ -25,6 +25,7 @@ function currentTimeStr() {
 }
 const clockInTime = ref(currentTimeStr())
 const clockOutTime = ref(currentTimeStr())
+const workType = ref<WorkType>("office")
 
 // 入力した "HH:MM" を今日の日付と組み合わせて ISO 文字列に変換
 function toIso(timeStr: string): string {
@@ -84,16 +85,19 @@ const canCorrect = computed(() =>
 // 出勤時刻の直接修正（出勤中のみ・承認不要）
 const isFixingClockIn = ref(false)
 const fixClockInTime = ref("")
+const fixClockInWorkType = ref<WorkType>("office")
 
 function startFixClockIn() {
   fixClockInTime.value = fmt(attendanceStore.today?.record?.clock_in)
+  fixClockInWorkType.value = (attendanceStore.today?.record?.work_type as WorkType) ?? "office"
   isFixingClockIn.value = true
 }
 
 async function handleFixClockIn() {
   try {
-    await attendanceStore.fixClockIn(toIso(fixClockInTime.value))
-    toast.add({ title: `出勤時刻を ${fixClockInTime.value} に修正しました`, color: "green", icon: "i-heroicons-check-circle" })
+    await attendanceStore.fixClockIn(toIso(fixClockInTime.value), fixClockInWorkType.value)
+    const typeLabel = fixClockInWorkType.value === "office" ? "出社" : "リモートワーク"
+    toast.add({ title: `出勤時刻を ${fixClockInTime.value} に修正しました（${typeLabel}）`, color: "green", icon: "i-heroicons-check-circle" })
     isFixingClockIn.value = false
   } catch {
     toast.add({ title: attendanceStore.error ?? "エラーが発生しました", color: "red", icon: "i-heroicons-exclamation-circle" })
@@ -159,8 +163,9 @@ function fmtMinutes(min: number) {
 
 async function handleClockIn() {
   try {
-    await attendanceStore.clockIn(toIso(clockInTime.value))
-    toast.add({ title: `${clockInTime.value} に出勤打刻しました`, color: "green", icon: "i-heroicons-check-circle" })
+    await attendanceStore.clockIn(toIso(clockInTime.value), workType.value)
+    const typeLabel = workType.value === "office" ? "出社" : "リモートワーク"
+    toast.add({ title: `${clockInTime.value} に出勤打刻しました（${typeLabel}）`, color: "green", icon: "i-heroicons-check-circle" })
   } catch {
     toast.add({ title: attendanceStore.error ?? "エラーが発生しました", color: "red", icon: "i-heroicons-exclamation-circle" })
   }
@@ -268,8 +273,21 @@ const annualOtPct  = computed(() => Math.min((annualOtMin.value / OT_LIMIT_YEAR)
           <div class="bg-green-50 border border-green-100 rounded-xl p-4 flex flex-col items-center gap-3">
             <p class="text-xs font-semibold text-green-700 tracking-wide uppercase">出勤時刻</p>
 
-            <!-- 未出勤: 時刻入力 + 出勤ボタン -->
+            <!-- 未出勤: 出社形態選択 + 時刻入力 + 出勤ボタン -->
             <template v-if="canClockIn">
+              <!-- 出社形態セグメントボタン -->
+              <div class="flex w-full rounded-lg overflow-hidden border border-green-200 text-xs font-semibold">
+                <button
+                  class="flex-1 py-1.5 transition-colors"
+                  :class="workType === 'office' ? 'bg-green-600 text-white' : 'bg-white text-green-700 hover:bg-green-50'"
+                  @click="workType = 'office'"
+                >🏢 出社</button>
+                <button
+                  class="flex-1 py-1.5 transition-colors border-l border-green-200"
+                  :class="workType === 'remote' ? 'bg-green-600 text-white' : 'bg-white text-green-700 hover:bg-green-50'"
+                  @click="workType = 'remote'"
+                >🏠 リモート</button>
+              </div>
               <input
                 v-model="clockInTime"
                 type="time"
@@ -287,10 +305,27 @@ const annualOtPct  = computed(() => Math.min((annualOtMin.value / OT_LIMIT_YEAR)
                 <p class="text-3xl font-bold text-green-800 font-mono py-1">
                   {{ fmt(attendanceStore.today?.record?.clock_in) }}
                 </p>
+                <UBadge
+                  v-if="attendanceStore.today?.record?.work_type"
+                  :color="attendanceStore.today.record.work_type === 'office' ? 'green' : 'blue'"
+                  variant="subtle" size="xs"
+                >{{ attendanceStore.today.record.work_type === 'office' ? '🏢 出社' : '🏠 リモート' }}</UBadge>
                 <UButton color="green" variant="soft" size="xs" icon="i-heroicons-pencil-square"
                   @click="startFixClockIn">時刻を修正</UButton>
               </template>
               <template v-else>
+                <div class="flex w-full rounded-lg overflow-hidden border border-green-200 text-xs font-semibold">
+                  <button
+                    class="flex-1 py-1.5 transition-colors"
+                    :class="fixClockInWorkType === 'office' ? 'bg-green-600 text-white' : 'bg-white text-green-700 hover:bg-green-50'"
+                    @click="fixClockInWorkType = 'office'"
+                  >🏢 出社</button>
+                  <button
+                    class="flex-1 py-1.5 transition-colors border-l border-green-200"
+                    :class="fixClockInWorkType === 'remote' ? 'bg-green-600 text-white' : 'bg-white text-green-700 hover:bg-green-50'"
+                    @click="fixClockInWorkType = 'remote'"
+                  >🏠 リモート</button>
+                </div>
                 <input v-model="fixClockInTime" type="time"
                   class="w-full text-center text-2xl font-bold font-mono text-green-800 bg-white border border-green-300 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-green-400" />
                 <div class="flex gap-2 w-full">
@@ -309,10 +344,27 @@ const annualOtPct  = computed(() => Math.min((annualOtMin.value / OT_LIMIT_YEAR)
                 <p class="text-3xl font-bold text-green-800 font-mono py-1">
                   {{ fmt(attendanceStore.today?.record?.clock_in) }}
                 </p>
+                <UBadge
+                  v-if="attendanceStore.today?.record?.work_type"
+                  :color="attendanceStore.today.record.work_type === 'office' ? 'green' : 'blue'"
+                  variant="subtle" size="xs"
+                >{{ attendanceStore.today.record.work_type === 'office' ? '🏢 出社' : '🏠 リモート' }}</UBadge>
                 <UButton color="green" variant="soft" size="xs" icon="i-heroicons-pencil-square"
                   @click="startFixClockIn">時刻を修正</UButton>
               </template>
               <template v-else>
+                <div class="flex w-full rounded-lg overflow-hidden border border-green-200 text-xs font-semibold">
+                  <button
+                    class="flex-1 py-1.5 transition-colors"
+                    :class="fixClockInWorkType === 'office' ? 'bg-green-600 text-white' : 'bg-white text-green-700 hover:bg-green-50'"
+                    @click="fixClockInWorkType = 'office'"
+                  >🏢 出社</button>
+                  <button
+                    class="flex-1 py-1.5 transition-colors border-l border-green-200"
+                    :class="fixClockInWorkType === 'remote' ? 'bg-green-600 text-white' : 'bg-white text-green-700 hover:bg-green-50'"
+                    @click="fixClockInWorkType = 'remote'"
+                  >🏠 リモート</button>
+                </div>
                 <input v-model="fixClockInTime" type="time"
                   class="w-full text-center text-2xl font-bold font-mono text-green-800 bg-white border border-green-300 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-green-400" />
                 <div class="flex gap-2 w-full">
@@ -533,7 +585,7 @@ const annualOtPct  = computed(() => Math.min((annualOtMin.value / OT_LIMIT_YEAR)
             </div>
             <div>
               <p class="font-semibold text-gray-800">勤怠一覧</p>
-              <p class="text-sm text-gray-500">月次の出退勤記録を確認する</p>
+              <p class="text-sm text-gray-500">月次記録の確認・過去日付の打刻入力</p>
             </div>
           </div>
         </NuxtLink>

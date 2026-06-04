@@ -1,5 +1,5 @@
 import { defineStore } from "pinia"
-import type { AttendanceRecord, MonthlyAttendanceResponse, TodayStatusResponse, YearlySummaryResponse } from "~/types/attendance"
+import type { AttendanceRecord, MonthlyAttendanceResponse, TodayStatusResponse, WorkType, YearlySummaryResponse } from "~/types/attendance"
 import { extractApiError } from "~/utils/validation"
 
 export const useAttendanceStore = defineStore("attendance", () => {
@@ -29,11 +29,13 @@ export const useAttendanceStore = defineStore("attendance", () => {
     }
   }
 
-  async function clockIn(clockInIso?: string): Promise<AttendanceRecord> {
+  async function clockIn(clockInIso?: string, workType?: WorkType): Promise<AttendanceRecord> {
     isLoading.value = true
     error.value = null
     try {
-      const body = clockInIso ? { clock_in: clockInIso } : {}
+      const body: Record<string, unknown> = {}
+      if (clockInIso) body.clock_in = clockInIso
+      if (workType) body.work_type = workType
       const record = await $fetch<AttendanceRecord>(
         `${config.public.apiBase}/api/v1/attendance/clock-in`,
         { method: "POST", headers: authHeaders(), body },
@@ -67,13 +69,15 @@ export const useAttendanceStore = defineStore("attendance", () => {
     }
   }
 
-  async function fixClockIn(clockInIso: string): Promise<AttendanceRecord> {
+  async function fixClockIn(clockInIso: string, workType?: WorkType): Promise<AttendanceRecord> {
     isLoading.value = true
     error.value = null
     try {
+      const body: Record<string, unknown> = { clock_in: clockInIso }
+      if (workType) body.work_type = workType
       const record = await $fetch<AttendanceRecord>(
         `${config.public.apiBase}/api/v1/attendance/today/clock-in`,
-        { method: "PATCH", headers: authHeaders(), body: { clock_in: clockInIso } },
+        { method: "PATCH", headers: authHeaders(), body },
       )
       await fetchToday()
       return record
@@ -131,6 +135,27 @@ export const useAttendanceStore = defineStore("attendance", () => {
     }
   }
 
+  async function createPastRecord(
+    date: string,
+    clockIn: string,
+    clockOut: string,
+    workType: WorkType | null,
+    breakMinutes: number,
+  ): Promise<AttendanceRecord> {
+    try {
+      return await $fetch<AttendanceRecord>(
+        `${config.public.apiBase}/api/v1/attendance/record`,
+        {
+          method: "POST",
+          headers: authHeaders(),
+          body: { date, clock_in: clockIn, clock_out: clockOut, work_type: workType, break_minutes: breakMinutes },
+        },
+      )
+    } catch (err: unknown) {
+      throw err
+    }
+  }
+
   async function fetchMonthly(month: string): Promise<MonthlyAttendanceResponse> {
     return $fetch<MonthlyAttendanceResponse>(
       `${config.public.apiBase}/api/v1/attendance/me`,
@@ -145,5 +170,5 @@ export const useAttendanceStore = defineStore("attendance", () => {
     )
   }
 
-  return { today, isLoading, error, fetchToday, clockIn, clockOut, fixClockIn, fixClockOut, requestCorrection, fetchMonthly, fetchYearly }
+  return { today, isLoading, error, fetchToday, clockIn, clockOut, fixClockIn, fixClockOut, requestCorrection, createPastRecord, fetchMonthly, fetchYearly }
 })

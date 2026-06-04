@@ -5,6 +5,8 @@ export type AttendanceStatus =
   | "CORRECTION_PENDING"
   | "CORRECTION_APPROVED"
 
+export type WorkType = "office" | "remote"
+
 export interface AttendanceRecord {
   id: number
   user_id: number
@@ -13,6 +15,7 @@ export interface AttendanceRecord {
   clock_out: string | null
   break_minutes: number
   status: AttendanceStatus
+  work_type: WorkType | null
   correction_note: string | null
   work_minutes: number | null
 }

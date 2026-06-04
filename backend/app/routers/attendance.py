@@ -16,6 +16,7 @@ from app.schemas.attendance import (
     FixClockOutRequest,
     MonthlyAttendanceResponse,
     MonthlySummaryItem,
+    PastRecordRequest,
     TodayStatusResponse,
     YearlySummaryResponse,
 )
@@ -49,6 +50,7 @@ def _to_response(record: AttendanceRecord) -> AttendanceResponse:
         clock_out=clock_out,
         break_minutes=record.break_minutes,
         status=record.status,
+        work_type=record.work_type,
         correction_note=record.correction_note,
         work_minutes=work_minutes,
     )
@@ -102,6 +104,7 @@ async def clock_in(
         user_id=current_user.id,
         date=today,
         clock_in=clock_in_dt,
+        work_type=payload.work_type,
         status="PRESENT",
     )
     db.add(record)
@@ -176,6 +179,8 @@ async def fix_today_clock_in(
         )
 
     record.clock_in = clock_in_dt
+    if payload.work_type is not None:
+        record.work_type = payload.work_type
     await db.commit()
     await db.refresh(record)
     return _to_response(record)
@@ -205,6 +210,63 @@ async def fix_today_clock_out(
         )
 
     record.clock_out = clock_out_dt
+    await db.commit()
+    await db.refresh(record)
+    return _to_response(record)
+
+
+@router.post("/record", response_model=AttendanceResponse, status_code=status.HTTP_201_CREATED)
+async def create_past_record(
+    payload: PastRecordRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> AttendanceResponse:
+    """当月の過去日付の打刻を直接登録する（承認不要）"""
+    today = datetime.now(timezone.utc).date()
+
+    if payload.date >= today:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="過去の日付のみ登録できます",
+        )
+
+    first_of_month = today.replace(day=1)
+    if payload.date < first_of_month:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="当月の日付のみ登録できます",
+        )
+
+    clock_in_dt = payload.clock_in
+    if clock_in_dt.tzinfo is None:
+        clock_in_dt = clock_in_dt.replace(tzinfo=timezone.utc)
+    clock_out_dt = payload.clock_out
+    if clock_out_dt.tzinfo is None:
+        clock_out_dt = clock_out_dt.replace(tzinfo=timezone.utc)
+
+    if clock_out_dt <= clock_in_dt:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="退勤時刻は出勤時刻より後にしてください",
+        )
+
+    existing = await _get_today_record(db, current_user.id, payload.date)
+    if existing is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="指定日の打刻記録はすでに存在します",
+        )
+
+    record = AttendanceRecord(
+        user_id=current_user.id,
+        date=payload.date,
+        clock_in=clock_in_dt,
+        clock_out=clock_out_dt,
+        break_minutes=payload.break_minutes,
+        work_type=payload.work_type,
+        status="CLOSED",
+    )
+    db.add(record)
     await db.commit()
     await db.refresh(record)
     return _to_response(record)
