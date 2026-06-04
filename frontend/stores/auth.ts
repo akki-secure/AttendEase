@@ -1,5 +1,5 @@
 import { defineStore } from "pinia"
-import type { AuthUser, LoginRequest, TokenResponse } from "~/types/auth"
+import type { AuthUser, LoginRequest, PreCheckResponse, TokenResponse } from "~/types/auth"
 import { extractApiError } from "~/utils/validation"
 
 export const useAuthStore = defineStore("auth", () => {
@@ -13,7 +13,7 @@ export const useAuthStore = defineStore("auth", () => {
 
   function decodeJwtUser(jwt: string): AuthUser {
     const decoded = JSON.parse(atob(jwt.split(".")[1]))
-    return { employee_id: decoded.sub, name: decoded.name, role: decoded.role }
+    return { id: decoded.user_id, employee_id: decoded.sub, name: decoded.name, role: decoded.role }
   }
 
   // トークンが残っていればリロード後も user を復元
@@ -29,14 +29,15 @@ export const useAuthStore = defineStore("auth", () => {
     error.value = null
   }
 
-  async function preCheck(payload: { employee_id: string; password: string }) {
+  async function preCheck(payload: { employee_id: string; password: string }): Promise<PreCheckResponse> {
     isLoading.value = true
     error.value = null
     try {
-      await $fetch(`${config.public.apiBase}/api/v1/auth/pre-check`, {
+      const data = await $fetch<PreCheckResponse>(`${config.public.apiBase}/api/v1/auth/pre-check`, {
         method: "POST",
         body: payload,
       })
+      return data
     } catch (err: unknown) {
       error.value = extractApiError(err, "認証に失敗しました。もう一度お試しください。")
       throw err

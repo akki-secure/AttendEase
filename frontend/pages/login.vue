@@ -9,13 +9,17 @@ const {
   step,
   employeeId, employeeIdAttrs,
   password, passwordAttrs,
-  passphrase, passphraseAttrs,
+  otp, otpAttrs,
+  emailHint,
+  resendCooldown,
+  isResending,
   credentialsErrors,
-  passphraseErrors,
+  otpErrors,
   isSubmittingCredentials,
-  isSubmittingPassphrase,
+  isSubmittingOtp,
   onSubmitCredentials,
-  onSubmitPassphrase,
+  onSubmitOtp,
+  resendOtp,
   backToCredentials,
   authStore,
 } = useLoginForm()
@@ -92,14 +96,29 @@ const {
 
       <p class="text-center text-sm text-gray-500 mt-4">
         アカウントをお持ちでない方は
-        <NuxtLink to="/register" class="text-blue-600 hover:underline font-medium">新規登録</NuxtLink>
+        <NuxtLink to="/register" class="text-brand-600 hover:underline font-medium">新規登録</NuxtLink>
       </p>
     </template>
 
-    <!-- ステップ2: 合言葉 -->
+    <!-- ステップ2: OTP -->
     <template v-else>
-      <h2 class="text-xl font-semibold text-gray-800 mb-2 text-center">合言葉を入力してください</h2>
-      <p class="text-center text-sm text-gray-500 mb-6">本人確認のため、合言葉を入力してください</p>
+      <h2 class="text-xl font-semibold text-gray-800 mb-2 text-center">認証コードを入力</h2>
+
+      <!-- 開発用バイパス表示 -->
+      <template v-if="emailHint.startsWith('[DEV]')">
+        <div class="bg-yellow-50 border border-yellow-300 rounded-lg p-4 mb-4 text-center">
+          <p class="text-xs font-semibold text-yellow-700 mb-1">開発モード: 認証コード</p>
+          <p class="text-3xl font-mono font-bold tracking-widest text-yellow-800">
+            {{ emailHint.replace('[DEV] ', '') }}
+          </p>
+        </div>
+      </template>
+      <template v-else>
+        <p class="text-center text-sm text-gray-500 mb-1">
+          <span class="font-medium text-gray-700">{{ emailHint }}</span> に
+        </p>
+        <p class="text-center text-sm text-gray-500 mb-6">6桁の認証コードを送信しました</p>
+      </template>
 
       <UAlert
         v-if="authStore.error"
@@ -110,17 +129,22 @@ const {
         class="mb-5"
       />
 
-      <form class="space-y-5" novalidate @submit.prevent="onSubmitPassphrase">
-        <UFormGroup label="合言葉" name="passphrase" :error="passphraseErrors.passphrase">
+      <form class="space-y-5" novalidate @submit.prevent="onSubmitOtp">
+        <UFormGroup label="認証コード" name="otp" :error="otpErrors.otp">
           <UInput
-            v-model="passphrase"
-            v-bind="passphraseAttrs"
-            placeholder="合言葉を入力してください"
+            v-model="otp"
+            v-bind="otpAttrs"
+            placeholder="6桁の数字"
             size="lg"
-            icon="i-heroicons-chat-bubble-left-ellipsis"
-            :disabled="isSubmittingPassphrase"
-            autocomplete="off"
+            icon="i-heroicons-envelope"
+            inputmode="numeric"
+            maxlength="6"
+            :disabled="isSubmittingOtp"
+            autocomplete="one-time-code"
           />
+          <template #hint>
+            <span class="text-xs text-gray-400">有効期限: 10分</span>
+          </template>
         </UFormGroup>
 
         <UButton
@@ -128,7 +152,7 @@ const {
           color="blue"
           block
           size="lg"
-          :loading="isSubmittingPassphrase"
+          :loading="isSubmittingOtp"
           class="mt-2"
         >
           ログイン
@@ -140,7 +164,20 @@ const {
           variant="ghost"
           block
           size="lg"
-          :disabled="isSubmittingPassphrase"
+          :disabled="resendCooldown > 0 || isResending || isSubmittingOtp"
+          :loading="isResending"
+          @click="resendOtp"
+        >
+          {{ resendCooldown > 0 ? `再送信（${resendCooldown}秒後）` : 'コードを再送信' }}
+        </UButton>
+
+        <UButton
+          type="button"
+          color="gray"
+          variant="ghost"
+          block
+          size="lg"
+          :disabled="isSubmittingOtp"
           @click="backToCredentials"
         >
           戻る

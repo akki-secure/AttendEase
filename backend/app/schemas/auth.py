@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 
 
 class PreCheckRequest(BaseModel):
@@ -6,10 +6,14 @@ class PreCheckRequest(BaseModel):
     password: str
 
 
+class PreCheckResponse(BaseModel):
+    ok: bool
+    email_hint: str
+
+
 class LoginRequest(BaseModel):
     employee_id: str
-    password: str
-    passphrase: str
+    otp: str
 
 
 class TokenResponse(BaseModel):
@@ -21,6 +25,7 @@ class RegisterRequest(BaseModel):
     employee_id: str
     name: str
     password: str
+    email: EmailStr | None = None
 
 
 class UserCreateRequest(BaseModel):
@@ -28,6 +33,7 @@ class UserCreateRequest(BaseModel):
     employee_id: str
     password: str
     role: str = "EMPLOYEE"
+    email: EmailStr | None = None
 
 
 class UserResponse(BaseModel):
@@ -36,3 +42,4 @@ class UserResponse(BaseModel):
     name: str
     role: str
     is_active: bool
+    email: str | None = None

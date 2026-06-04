@@ -22,8 +22,13 @@ async def seed() -> None:
     async with AsyncSessionLocal() as db:
         for data in TEST_USERS:
             result = await db.execute(select(User).where(User.employee_id == data["employee_id"]))
-            if result.scalar_one_or_none() is not None:
-                print(f"スキップ: {data['employee_id']} は既に存在します")
+            existing = result.scalar_one_or_none()
+            if existing is not None:
+                existing.name = data["name"]
+                existing.hashed_password = get_password_hash(data["password"])
+                existing.role = data["role"]
+                existing.failed_login_count = 0
+                print(f"更新: {data['employee_id']} ({data['name']})")
                 continue
 
             user = User(

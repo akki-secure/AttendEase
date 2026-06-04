@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import type { MonthlyAttendanceResponse } from "~/types/attendance"
+import type { WorkType } from "~/types/attendance"
+import type { LeaveRequest } from "~/types/leave"
 
 const authStore = useAuthStore()
 const attendanceStore = useAttendanceStore()
+const leaveStore = useLeaveStore()
 
 if (!authStore.isLoggedIn) {
   await navigateTo("/login")
@@ -31,7 +34,16 @@ async function loadMonthly() {
   }
 }
 
-await loadMonthly()
+// 休暇データ（当年分を一括取得）
+const myLeaves = ref<LeaveRequest[]>([])
+async function loadLeaves() {
+  try {
+    await leaveStore.fetchMyLeaves(today.getFullYear())
+    myLeaves.value = leaveStore.myLeaves
+  } catch { /* non-critical */ }
+}
+
+await Promise.all([loadMonthly(), loadLeaves()])
 watch(currentMonth, loadMonthly)
 
 function prevMonth() {
@@ -51,7 +63,8 @@ const isCurrentMonth = computed(() =>
 
 function fmt(iso: string | null) {
   if (!iso) return "--:--"
-  return new Date(iso).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })
+  const utc = /[Z+]/.test(iso) ? iso : iso + "Z"
+  return new Date(utc).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })
 }
 function fmtMinutes(min: number | null) {
   if (min == null) return "--"
@@ -73,6 +86,7 @@ const statusMap: Record<string, { label: string; color: "green" | "blue" | "ambe
 
 const columns = [
   { key: "date",         label: "日付" },
+  { key: "work_type",   label: "形態" },
   { key: "clock_in",    label: "出勤" },
   { key: "clock_out",   label: "退勤" },
   { key: "break",       label: "休憩" },
@@ -84,9 +98,12 @@ const columns = [
 const tableRows = computed(() =>
   (monthly.value?.records ?? []).map((r) => {
     const overtime = r.work_minutes != null ? Math.max(r.work_minutes - 480, 0) : null
+    const workTypeLabel = r.work_type === "office" ? "出社" : r.work_type === "remote" ? "リモート" : null
     return {
       ...r,
       _date:      fmtDate(r.date),
+      _workType:  workTypeLabel,
+      _workTypeColor: r.work_type === "office" ? "green" : r.work_type === "remote" ? "blue" : null,
       _clockIn:   fmt(r.clock_in),
       _clockOut:  fmt(r.clock_out),
       _break:     r.break_minutes > 0 ? `${r.break_minutes}分` : "--",
@@ -102,26 +119,134 @@ function fmtTotalHours(min: number) {
   const m = min % 60
   return `${h}時間${m}分`
 }
+
+// ─── カレンダー ───────────────────────────────────────
+const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"]
+
+const calendarDays = computed(() => {
+  const [y, m] = currentMonth.value.split("-").map(Number)
+  const firstDay = new Date(y, m - 1, 1).getDay() // 0=日
+  const daysInMonth = new Date(y, m, 0).getDate()
+  const cells: Array<{ date: string; day: number } | null> = []
+  for (let i = 0; i < firstDay; i++) cells.push(null)
+  for (let d = 1; d <= daysInMonth; d++) {
+    cells.push({ date: `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`, day: d })
+  }
+  return cells
+})
+
+const recordByDate = computed(() => {
+  const map: Record<string, (typeof tableRows.value)[0]> = {}
+  for (const r of tableRows.value) map[r.date] = r
+  return map
+})
+
+const todayStr = computed(
+  () => `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`
+)
+
+const LEAVE_TYPE_JA: Record<string, string> = {
+  ANNUAL: "有給",
+  SPECIAL: "特別休暇",
+  SICK: "病休",
+  CONDOLENCE: "慶弔",
+  UNPAID: "欠勤",
+}
+
+// 日付ごとの休暇マップ（APPROVED または PENDING のみ）
+const leaveByDate = computed(() => {
+  const map: Record<string, LeaveRequest> = {}
+  for (const leave of myLeaves.value) {
+    if (leave.status === "REJECTED" || leave.status === "CANCELLED") continue
+    const start = new Date(leave.start_date + "T00:00:00")
+    const end = new Date(leave.end_date + "T00:00:00")
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+      map[key] = leave
+    }
+  }
+  return map
+})
+
+function cellState(dateStr: string): "today" | "past-leave" | "past-empty" | "past-recorded" | "future" {
+  if (dateStr === todayStr.value) return "today"
+  if (dateStr < todayStr.value) {
+    if (leaveByDate.value[dateStr]) return "past-leave"
+    return recordByDate.value[dateStr] ? "past-recorded" : "past-empty"
+  }
+  return "future"
+}
+
+// ─── 過去打刻入力モーダル ─────────────────────────────
+const modalOpen = ref(false)
+const modalDate = ref("")
+const modalClockIn = ref("09:00")
+const modalClockOut = ref("18:00")
+const modalWorkType = ref<WorkType | "">("")
+const modalBreak = ref(60)
+const modalError = ref<string | null>(null)
+const modalLoading = ref(false)
+
+function openModal(dateStr: string) {
+  modalDate.value = dateStr
+  modalClockIn.value = "09:00"
+  modalClockOut.value = "18:00"
+  modalWorkType.value = ""
+  modalBreak.value = 60
+  modalError.value = null
+  modalOpen.value = true
+}
+
+function toIsoJst(dateStr: string, timeStr: string): string {
+  return new Date(`${dateStr}T${timeStr}:00+09:00`).toISOString()
+}
+
+async function submitPastRecord() {
+  modalError.value = null
+  if (!modalClockIn.value || !modalClockOut.value) {
+    modalError.value = "出勤・退勤時刻を入力してください"
+    return
+  }
+  modalLoading.value = true
+  try {
+    await attendanceStore.createPastRecord(
+      modalDate.value,
+      toIsoJst(modalDate.value, modalClockIn.value),
+      toIsoJst(modalDate.value, modalClockOut.value),
+      modalWorkType.value ? (modalWorkType.value as WorkType) : null,
+      modalBreak.value,
+    )
+    modalOpen.value = false
+    await loadMonthly()
+  } catch (err: unknown) {
+    const e = err as { data?: { detail?: string } }
+    modalError.value = e?.data?.detail ?? "登録に失敗しました"
+  } finally {
+    modalLoading.value = false
+  }
+}
+
+const { roleTheme } = useRoleTheme()
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+  <div :class="['min-h-screen', roleTheme.pageBg]">
     <!-- ヘッダー -->
-    <header class="bg-white shadow-sm border-b border-gray-200">
+    <header :class="[roleTheme.header, 'shadow-lg']">
       <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
           <NuxtLink to="/" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <div class="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center shadow">
+            <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center shadow">
               <UIcon name="i-heroicons-clock" class="w-5 h-5 text-white" />
             </div>
-            <span class="text-lg font-bold text-gray-900">AttendEase</span>
+            <span class="text-lg font-bold text-white">AttendEase</span>
           </NuxtLink>
-          <UIcon name="i-heroicons-chevron-right" class="w-4 h-4 text-gray-400" />
-          <span class="text-sm text-gray-600 font-medium">勤怠一覧</span>
+          <UIcon name="i-heroicons-chevron-right" :class="['w-4 h-4', roleTheme.sub3]" />
+          <span :class="['text-sm font-medium', roleTheme.sub1]">勤怠一覧</span>
         </div>
         <div class="flex items-center gap-3">
-          <span class="text-sm text-gray-500 hidden sm:block">{{ authStore.user?.name }} さん</span>
-          <UButton color="gray" variant="soft" size="sm" icon="i-heroicons-arrow-right-on-rectangle" @click="authStore.logout()">
+          <span :class="['text-sm hidden sm:block', roleTheme.sub1]">{{ authStore.user?.name }} さん</span>
+          <UButton variant="ghost" size="sm" icon="i-heroicons-arrow-right-on-rectangle" class="!bg-red-500 !text-white hover:!bg-red-600 transition-all duration-200 font-medium rounded-lg" @click="authStore.logout()">
             ログアウト
           </UButton>
         </div>
@@ -153,13 +278,91 @@ function fmtTotalHours(min: number) {
         </div>
         <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 text-center">
           <p class="text-xs text-gray-500 mb-1">総労働時間</p>
-          <p class="text-2xl font-bold text-blue-700">{{ fmtTotalHours(monthly.total_work_minutes) }}</p>
+          <p class="text-2xl font-bold text-brand-700">{{ fmtTotalHours(monthly.total_work_minutes) }}</p>
         </div>
         <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 text-center col-span-2 sm:col-span-1">
           <p class="text-xs text-gray-500 mb-1">残業時間</p>
           <p class="text-2xl font-bold" :class="monthly.total_overtime_minutes > 0 ? 'text-orange-600' : 'text-gray-400'">
             {{ fmtTotalHours(monthly.total_overtime_minutes) }}
           </p>
+        </div>
+      </div>
+
+      <!-- カレンダー -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <div class="flex items-center gap-2 mb-4">
+          <UIcon name="i-heroicons-calendar-days" class="w-4 h-4 text-gray-400" />
+          <span class="text-sm font-semibold text-gray-600">月間カレンダー</span>
+          <span v-if="isCurrentMonth" class="ml-2 text-xs text-gray-400">過去の未入力日をクリックして打刻を追加できます</span>
+        </div>
+        <!-- 曜日ヘッダー -->
+        <div class="grid grid-cols-7 mb-1">
+          <div
+            v-for="(wd, i) in WEEKDAYS" :key="wd"
+            class="text-center text-xs font-semibold py-1"
+            :class="i === 0 ? 'text-red-400' : i === 6 ? 'text-blue-400' : 'text-gray-400'"
+          >{{ wd }}</div>
+        </div>
+        <!-- 日付グリッド -->
+        <div class="grid grid-cols-7 gap-1">
+          <div v-for="(cell, idx) in calendarDays" :key="idx">
+            <!-- 空白セル（月初の埋め） -->
+            <div v-if="!cell" class="h-14" />
+            <!-- 今日 -->
+            <div
+              v-else-if="cellState(cell.date) === 'today'"
+              class="h-14 rounded-xl border-2 border-brand-400 bg-brand-50 flex flex-col items-center justify-center px-1"
+            >
+              <span class="text-xs font-bold text-brand-600">{{ cell.day }}</span>
+              <span class="text-[10px] text-brand-400 mt-0.5">今日</span>
+            </div>
+            <!-- 過去・休暇あり -->
+            <div
+              v-else-if="cellState(cell.date) === 'past-leave'"
+              class="h-14 rounded-xl flex flex-col items-center justify-center px-1"
+              :class="leaveByDate[cell.date].status === 'APPROVED' ? 'bg-green-50 border border-green-100' : 'bg-amber-50 border border-amber-100'"
+            >
+              <span class="text-xs font-semibold" :class="leaveByDate[cell.date].status === 'APPROVED' ? 'text-green-700' : 'text-amber-700'">{{ cell.day }}</span>
+              <span
+                class="text-[10px] mt-0.5 font-medium leading-tight text-center"
+                :class="leaveByDate[cell.date].status === 'APPROVED' ? 'text-green-500' : 'text-amber-500'"
+              >{{ LEAVE_TYPE_JA[leaveByDate[cell.date].leave_type] ?? leaveByDate[cell.date].leave_type }}</span>
+              <span v-if="leaveByDate[cell.date].status === 'PENDING'" class="text-[9px] text-amber-400">申請中</span>
+            </div>
+            <!-- 過去・記録あり -->
+            <div
+              v-else-if="cellState(cell.date) === 'past-recorded'"
+              class="h-14 rounded-xl bg-blue-50 border border-blue-100 flex flex-col items-center justify-center px-1"
+            >
+              <span class="text-xs font-semibold text-gray-600">{{ cell.day }}</span>
+              <span class="text-[10px] text-blue-500 mt-0.5 font-mono leading-tight">{{ recordByDate[cell.date]._clockIn }}</span>
+              <span class="text-[10px] text-blue-400 font-mono leading-tight">{{ recordByDate[cell.date]._clockOut }}</span>
+            </div>
+            <!-- 過去・未入力（当月のみクリック可） -->
+            <button
+              v-else-if="cellState(cell.date) === 'past-empty'"
+              class="h-14 w-full rounded-xl border border-dashed border-gray-200 hover:border-brand-300 hover:bg-brand-50 flex flex-col items-center justify-center transition-colors group"
+              @click="openModal(cell.date)"
+            >
+              <span class="text-xs text-gray-400 group-hover:text-brand-500">{{ cell.day }}</span>
+              <UIcon name="i-heroicons-plus" class="w-3.5 h-3.5 text-gray-300 group-hover:text-brand-400 mt-0.5" />
+            </button>
+            <!-- 未来 -->
+            <div
+              v-else
+              class="h-14 rounded-xl flex items-center justify-center"
+            >
+              <span class="text-xs text-gray-300">{{ cell.day }}</span>
+            </div>
+          </div>
+        </div>
+        <!-- 凡例 -->
+        <div class="flex flex-wrap items-center gap-4 mt-4 pt-3 border-t border-gray-50">
+          <div class="flex items-center gap-1.5"><div class="w-3 h-3 rounded bg-blue-100 border border-blue-200" /><span class="text-xs text-gray-400">打刻済</span></div>
+          <div class="flex items-center gap-1.5"><div class="w-3 h-3 rounded border border-dashed border-gray-300" /><span class="text-xs text-gray-400">未入力（クリックで追加）</span></div>
+          <div class="flex items-center gap-1.5"><div class="w-3 h-3 rounded bg-green-100 border border-green-200" /><span class="text-xs text-gray-400">休暇（承認済）</span></div>
+          <div class="flex items-center gap-1.5"><div class="w-3 h-3 rounded bg-amber-100 border border-amber-200" /><span class="text-xs text-gray-400">休暇（申請中）</span></div>
+          <div class="flex items-center gap-1.5"><div class="w-3 h-3 rounded border-2 border-brand-400 bg-brand-50" /><span class="text-xs text-gray-400">今日</span></div>
         </div>
       </div>
 
@@ -192,6 +395,10 @@ function fmtTotalHours(min: number) {
                 class="hover:bg-gray-50 transition-colors"
               >
                 <td class="px-4 py-3 font-medium text-gray-700 whitespace-nowrap">{{ row._date }}</td>
+                <td class="px-4 py-3">
+                  <UBadge v-if="row._workType" :color="row._workTypeColor" variant="subtle" size="xs">{{ row._workType }}</UBadge>
+                  <span v-else class="text-gray-300">—</span>
+                </td>
                 <td class="px-4 py-3 font-mono text-gray-600">{{ row._clockIn }}</td>
                 <td class="px-4 py-3 font-mono text-gray-600">{{ row._clockOut }}</td>
                 <td class="px-4 py-3 text-gray-500">{{ row._break }}</td>
@@ -208,5 +415,90 @@ function fmtTotalHours(min: number) {
         </div>
       </div>
     </main>
+
+    <!-- 過去日付入力モーダル -->
+    <UModal v-model="modalOpen">
+      <UCard>
+        <template #header>
+          <div class="flex items-center gap-2">
+            <UIcon name="i-heroicons-pencil-square" class="w-5 h-5 text-brand-500" />
+            <span class="font-semibold text-gray-800">打刻を入力</span>
+            <UBadge color="gray" variant="soft" size="xs">{{ modalDate }}</UBadge>
+          </div>
+        </template>
+
+        <div class="space-y-4">
+          <!-- 出社形態 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">出社形態</label>
+            <div class="flex gap-2">
+              <UButton
+                size="sm"
+                :color="modalWorkType === 'office' ? 'green' : 'gray'"
+                :variant="modalWorkType === 'office' ? 'solid' : 'outline'"
+                @click="modalWorkType = modalWorkType === 'office' ? '' : 'office'"
+              >出社</UButton>
+              <UButton
+                size="sm"
+                :color="modalWorkType === 'remote' ? 'blue' : 'gray'"
+                :variant="modalWorkType === 'remote' ? 'solid' : 'outline'"
+                @click="modalWorkType = modalWorkType === 'remote' ? '' : 'remote'"
+              >リモート</UButton>
+            </div>
+          </div>
+
+          <!-- 出勤時刻 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">出勤時刻</label>
+            <input
+              v-model="modalClockIn"
+              type="time"
+              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
+            />
+          </div>
+
+          <!-- 退勤時刻 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">退勤時刻</label>
+            <input
+              v-model="modalClockOut"
+              type="time"
+              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
+            />
+          </div>
+
+          <!-- 休憩時間 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">休憩時間（分）</label>
+            <input
+              v-model.number="modalBreak"
+              type="number"
+              min="0"
+              max="480"
+              step="15"
+              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
+            />
+          </div>
+
+          <!-- エラー -->
+          <div v-if="modalError" class="flex items-center gap-2 text-red-500 text-sm bg-red-50 rounded-lg px-3 py-2">
+            <UIcon name="i-heroicons-exclamation-circle" class="w-4 h-4 flex-shrink-0" />
+            {{ modalError }}
+          </div>
+        </div>
+
+        <template #footer>
+          <div class="flex justify-end gap-2">
+            <UButton color="gray" variant="outline" @click="modalOpen = false">キャンセル</UButton>
+            <UButton
+              color="primary"
+              :loading="modalLoading"
+              icon="i-heroicons-check"
+              @click="submitPastRecord"
+            >登録</UButton>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
   </div>
 </template>
