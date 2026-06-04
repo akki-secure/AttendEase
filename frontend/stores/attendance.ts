@@ -73,7 +73,8 @@ export const useAttendanceStore = defineStore("attendance", () => {
     isLoading.value = true
     error.value = null
     try {
-      const body: Record<string, unknown> = { clock_in: clockInIso, work_type: workType ?? null }
+      const body: Record<string, unknown> = { clock_in: clockInIso }
+      if (workType != null) body.work_type = workType
       const record = await $fetch<AttendanceRecord>(
         `${config.public.apiBase}/api/v1/attendance/today/clock-in`,
         { method: "PATCH", headers: authHeaders(), body },
