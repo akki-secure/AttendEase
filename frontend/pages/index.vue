@@ -59,6 +59,8 @@ const statusLabel = computed(() => {
   }
 })
 
+const { roleTheme } = useRoleTheme()
+
 const statusColor = computed(() => {
   switch (attendanceStore.today?.status) {
     case "PRESENT": return "green"
@@ -189,7 +191,7 @@ function barHeight(min: number) { return Math.min((min / CHART_MAX_MIN) * 100, 1
 function barColor(min: number)  {
   if (min >= OT_LIMIT_MONTH) return 'bg-red-500'
   if (min >= 1800)           return 'bg-amber-400'
-  return 'bg-blue-400'
+  return 'bg-brand-400'
 }
 function fmtH(min: number) { return parseFloat((min / 60).toFixed(1)) }
 
@@ -204,9 +206,9 @@ const annualOtPct  = computed(() => Math.min((annualOtMin.value / OT_LIMIT_YEAR)
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+  <div :class="['min-h-screen', roleTheme.pageBg]">
     <!-- ヘッダー -->
-    <header class="bg-gradient-to-r from-blue-700 to-indigo-800 shadow-lg">
+    <header :class="[roleTheme.header, 'shadow-lg']">
       <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
           <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center shadow">
@@ -215,7 +217,7 @@ const annualOtPct  = computed(() => Math.min((annualOtMin.value / OT_LIMIT_YEAR)
           <span class="text-lg font-bold text-white">AttendEase</span>
         </div>
         <div class="flex items-center gap-3">
-          <span class="text-sm text-blue-100 hidden sm:block">{{ authStore.user?.name }} さん</span>
+          <span :class="['text-sm hidden sm:block', roleTheme.sub1]">{{ authStore.user?.name }} さん</span>
           <!-- 通知ベル -->
           <NuxtLink to="/notifications" class="relative">
             <UButton variant="ghost" size="sm" icon="i-heroicons-bell" class="!text-white hover:!bg-white/20 rounded-lg" />
@@ -240,10 +242,10 @@ const annualOtPct  = computed(() => Math.min((annualOtMin.value / OT_LIMIT_YEAR)
 
     <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
       <!-- ウェルカムバナー -->
-      <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-8 text-white shadow-lg">
-        <p class="text-blue-100 text-sm mb-1">おかえりなさい</p>
+      <div :class="[roleTheme.banner, 'rounded-2xl p-8 text-white shadow-lg']">
+        <p :class="[roleTheme.sub1, 'text-sm mb-1']">おかえりなさい</p>
         <h1 class="text-2xl font-bold mb-2">{{ authStore.user?.name }} さん</h1>
-        <p class="text-blue-200 text-sm">
+        <p :class="[roleTheme.sub2, 'text-sm']">
           {{ now.toLocaleDateString("ja-JP", { year: "numeric", month: "long", day: "numeric", weekday: "long" }) }}
           &nbsp;
           <span class="font-mono text-base text-white">{{ now.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) }}</span>
@@ -418,10 +420,10 @@ const annualOtPct  = computed(() => Math.min((annualOtMin.value / OT_LIMIT_YEAR)
         <!-- 労働時間（退勤済のみ表示） -->
         <div
           v-if="attendanceStore.today?.record?.work_minutes != null"
-          class="bg-blue-50 rounded-xl p-4 text-center"
+          class="bg-brand-50 rounded-xl p-4 text-center"
         >
-          <p class="text-xs text-blue-700 font-medium mb-1">労働時間</p>
-          <p class="text-xl font-bold text-blue-800">
+          <p class="text-xs text-brand-700 font-medium mb-1">労働時間</p>
+          <p class="text-xl font-bold text-brand-800">
             {{ fmtMinutes(attendanceStore.today!.record!.work_minutes!) }}
           </p>
         </div>
@@ -431,7 +433,7 @@ const annualOtPct  = computed(() => Math.min((annualOtMin.value / OT_LIMIT_YEAR)
       <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center gap-2">
-            <UIcon name="i-heroicons-chart-bar" class="w-5 h-5 text-indigo-500" />
+            <UIcon name="i-heroicons-chart-bar" class="w-5 h-5 text-brand-500" />
             <h2 class="text-base font-semibold text-gray-800">{{ currentYear }}年 残業サマリー</h2>
           </div>
           <span class="text-[10px] text-gray-400 bg-gray-100 rounded px-2 py-0.5">36協定 月45h / 年360h</span>
@@ -487,7 +489,7 @@ const annualOtPct  = computed(() => Math.min((annualOtMin.value / OT_LIMIT_YEAR)
 
           <!-- 凡例 -->
           <div class="flex gap-4 text-[10px] text-gray-500 mb-4">
-            <div class="flex items-center gap-1"><div class="w-2.5 h-2.5 rounded-sm bg-blue-400"></div>通常</div>
+            <div class="flex items-center gap-1"><div class="w-2.5 h-2.5 rounded-sm bg-brand-400"></div>通常</div>
             <div class="flex items-center gap-1"><div class="w-2.5 h-2.5 rounded-sm bg-amber-400"></div>注意（30h+）</div>
             <div class="flex items-center gap-1"><div class="w-2.5 h-2.5 rounded-sm bg-red-500"></div>上限超（45h+）</div>
           </div>
@@ -498,13 +500,13 @@ const annualOtPct  = computed(() => Math.min((annualOtMin.value / OT_LIMIT_YEAR)
               <span class="text-xs text-gray-500">年間残業合計</span>
               <span
                 class="text-sm font-bold"
-                :class="annualOtH >= 360 ? 'text-red-600' : annualOtH >= 300 ? 'text-amber-600' : 'text-gray-700'"
+                :class="annualOtH >= 360 ? 'text-red-600' : annualOtH >= 300 ? 'text-amber-600' : 'text-brand-700'"
               >{{ annualOtH }}h <span class="text-xs font-normal text-gray-400">/ 360h</span></span>
             </div>
             <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
               <div
                 class="h-full rounded-full transition-all duration-700"
-                :class="annualOtH >= 360 ? 'bg-red-500' : annualOtH >= 300 ? 'bg-amber-400' : 'bg-blue-500'"
+                :class="annualOtH >= 360 ? 'bg-red-500' : annualOtH >= 300 ? 'bg-amber-400' : 'bg-brand-500'"
                 :style="{ width: annualOtPct + '%' }"
               />
             </div>
@@ -562,8 +564,8 @@ const annualOtPct  = computed(() => Math.min((annualOtMin.value / OT_LIMIT_YEAR)
 
         <NuxtLink v-if="['MANAGER', 'ADMIN'].includes(authStore.user?.role ?? '')" to="/reports" class="block">
           <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer">
-            <div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
-              <UIcon name="i-heroicons-chart-bar" class="w-7 h-7 text-blue-600" />
+            <div class="w-12 h-12 rounded-xl bg-brand-100 flex items-center justify-center flex-shrink-0">
+              <UIcon name="i-heroicons-chart-bar" class="w-7 h-7 text-brand-600" />
             </div>
             <div>
               <p class="font-semibold text-gray-800">勤怠レポート</p>
@@ -572,8 +574,8 @@ const annualOtPct  = computed(() => Math.min((annualOtMin.value / OT_LIMIT_YEAR)
           </div>
         </NuxtLink>
         <div v-else class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 flex items-center gap-4 opacity-40">
-          <div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
-            <UIcon name="i-heroicons-chart-bar" class="w-7 h-7 text-blue-600" />
+          <div class="w-12 h-12 rounded-xl bg-brand-100 flex items-center justify-center flex-shrink-0">
+            <UIcon name="i-heroicons-chart-bar" class="w-7 h-7 text-brand-600" />
           </div>
           <div>
             <p class="font-semibold text-gray-800">勤怠レポート</p>
@@ -583,8 +585,8 @@ const annualOtPct  = computed(() => Math.min((annualOtMin.value / OT_LIMIT_YEAR)
 
         <NuxtLink to="/notifications" class="block">
           <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer">
-            <div class="relative w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
-              <UIcon name="i-heroicons-bell" class="w-7 h-7 text-indigo-600" />
+            <div class="relative w-12 h-12 rounded-xl bg-brand-100 flex items-center justify-center flex-shrink-0">
+              <UIcon name="i-heroicons-bell" class="w-7 h-7 text-brand-600" />
               <span
                 v-if="notifStore.unreadCount > 0"
                 class="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1"
@@ -636,10 +638,10 @@ const annualOtPct  = computed(() => Math.min((annualOtMin.value / OT_LIMIT_YEAR)
           <h2 class="font-semibold text-gray-800">管理者メニュー</h2>
         </div>
         <div class="flex gap-2 flex-wrap">
-          <UButton color="amber" variant="soft" icon="i-heroicons-user-plus" to="/admin/users">
+          <UButton color="amber" variant="outline" icon="i-heroicons-user-plus" to="/admin/users">
             ユーザー管理
           </UButton>
-          <UButton color="amber" variant="soft" icon="i-heroicons-calendar-days" to="/admin/leave-balances">
+          <UButton color="amber" variant="outline" icon="i-heroicons-calendar-days" to="/admin/leave-balances">
             有給残日数管理
           </UButton>
         </div>

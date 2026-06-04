@@ -93,12 +93,14 @@ const ROLE_LABEL: Record<string, string> = {
   MANAGER: "マネージャー",
   ADMIN: "管理者",
 }
+
+const { roleTheme } = useRoleTheme()
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+  <div :class="['min-h-screen', roleTheme.pageBg]">
     <!-- ヘッダー -->
-    <header class="bg-gradient-to-r from-blue-700 to-indigo-800 shadow-lg">
+    <header :class="[roleTheme.header, 'shadow-lg']">
       <div class="max-w-2xl mx-auto px-6 py-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
           <NuxtLink to="/" class="flex items-center gap-3">
@@ -109,7 +111,7 @@ const ROLE_LABEL: Record<string, string> = {
           </NuxtLink>
         </div>
         <div class="flex items-center gap-3">
-          <NuxtLink to="/" class="text-blue-200 hover:text-white text-sm transition-colors">
+          <NuxtLink to="/" :class="[roleTheme.sub2, 'hover:text-white text-sm transition-colors']">
             ← ダッシュボード
           </NuxtLink>
           <UButton
@@ -124,7 +126,7 @@ const ROLE_LABEL: Record<string, string> = {
 
     <main class="max-w-2xl mx-auto px-6 py-10">
       <div class="flex items-center gap-2 mb-6">
-        <UIcon name="i-heroicons-user-circle" class="w-6 h-6 text-indigo-600" />
+        <UIcon name="i-heroicons-user-circle" class="w-6 h-6 text-brand-600" />
         <h1 class="text-xl font-bold text-gray-800">プロフィール設定</h1>
       </div>
 
@@ -160,7 +162,7 @@ const ROLE_LABEL: Record<string, string> = {
               v-model="name"
               type="text"
               placeholder="氏名"
-              class="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              class="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
             />
           </div>
 
@@ -171,7 +173,7 @@ const ROLE_LABEL: Record<string, string> = {
               v-model="email"
               type="email"
               placeholder="メールアドレス（通知の送信先）"
-              class="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              class="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
             />
             <p class="text-xs text-gray-400 mt-1">申請・承認の通知メールを受け取るために使用されます</p>
           </div>
@@ -196,7 +198,7 @@ const ROLE_LABEL: Record<string, string> = {
                   v-model="currentPassword"
                   :type="showCurrentPassword ? 'text' : 'password'"
                   placeholder="現在のパスワード"
-                  class="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 pr-11 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  class="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 pr-11 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
                 />
                 <button
                   type="button"
@@ -214,7 +216,7 @@ const ROLE_LABEL: Record<string, string> = {
                   v-model="newPassword"
                   :type="showNewPassword ? 'text' : 'password'"
                   placeholder="8文字以上"
-                  class="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 pr-11 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  class="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 pr-11 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
                 />
                 <button
                   type="button"
@@ -232,7 +234,7 @@ const ROLE_LABEL: Record<string, string> = {
                   v-model="confirmPassword"
                   :type="showConfirmPassword ? 'text' : 'password'"
                   placeholder="もう一度入力"
-                  class="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 pr-11 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  class="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 pr-11 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
                   :class="confirmPassword && newPassword !== confirmPassword ? 'border-red-400 focus:ring-red-400' : ''"
                 />
                 <button

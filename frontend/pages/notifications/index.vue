@@ -19,7 +19,7 @@ const TYPE_ICON: Record<string, string> = {
 }
 
 const TYPE_COLOR: Record<string, string> = {
-  LEAVE_REQUEST: "text-blue-500",
+  LEAVE_REQUEST: "text-brand-500",
   LEAVE_APPROVED: "text-green-500",
   LEAVE_REJECTED: "text-red-500",
   OVERTIME_REQUEST: "text-orange-500",
@@ -41,12 +41,14 @@ async function handleRead(id: number) {
 async function handleReadAll() {
   await notifStore.markAllAsRead()
 }
+
+const { roleTheme } = useRoleTheme()
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+  <div :class="['min-h-screen', roleTheme.pageBg]">
     <!-- ヘッダー -->
-    <header class="bg-gradient-to-r from-blue-700 to-indigo-800 shadow-lg">
+    <header :class="[roleTheme.header, 'shadow-lg']">
       <div class="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
           <NuxtLink to="/" class="flex items-center gap-3">
@@ -57,7 +59,7 @@ async function handleReadAll() {
           </NuxtLink>
         </div>
         <div class="flex items-center gap-3">
-          <NuxtLink to="/" class="text-blue-200 hover:text-white text-sm transition-colors">
+          <NuxtLink to="/" :class="[roleTheme.sub2, 'hover:text-white text-sm transition-colors']">
             ← ダッシュボード
           </NuxtLink>
           <UButton
@@ -73,7 +75,7 @@ async function handleReadAll() {
     <main class="max-w-3xl mx-auto px-6 py-10">
       <div class="flex items-center justify-between mb-6">
         <div class="flex items-center gap-2">
-          <UIcon name="i-heroicons-bell" class="w-6 h-6 text-indigo-600" />
+          <UIcon name="i-heroicons-bell" class="w-6 h-6 text-brand-600" />
           <h1 class="text-xl font-bold text-gray-800">通知</h1>
           <UBadge v-if="notifStore.unreadCount > 0" color="red" size="sm">
             {{ notifStore.unreadCount }}
@@ -103,7 +105,7 @@ async function handleReadAll() {
           v-for="notif in notifStore.notifications"
           :key="notif.id"
           class="bg-white rounded-xl shadow-sm border border-gray-100 px-5 py-4 flex items-start gap-4 transition-all"
-          :class="notif.is_read ? 'opacity-60' : 'border-l-4 border-l-indigo-400'"
+          :class="notif.is_read ? 'opacity-60' : 'border-l-4 border-l-brand-400'"
         >
           <div class="flex-shrink-0 mt-0.5">
             <UIcon

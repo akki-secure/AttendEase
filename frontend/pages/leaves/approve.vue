@@ -47,12 +47,14 @@ function fmtDate(s: string) {
 function fmtDatetime(s: string) {
   return new Date(s).toLocaleDateString("ja-JP", { month: "numeric", day: "numeric" })
 }
+
+const { roleTheme } = useRoleTheme()
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50">
+  <div :class="['min-h-screen', roleTheme.pageBg]">
     <!-- ヘッダー -->
-    <header class="bg-gradient-to-r from-blue-700 to-indigo-800 shadow-lg">
+    <header :class="[roleTheme.header, 'shadow-lg']">
       <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
           <NuxtLink to="/" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
@@ -61,11 +63,11 @@ function fmtDatetime(s: string) {
             </div>
             <span class="text-lg font-bold text-white">AttendEase</span>
           </NuxtLink>
-          <UIcon name="i-heroicons-chevron-right" class="w-4 h-4 text-blue-300" />
-          <span class="text-sm text-blue-100 font-medium">休暇承認</span>
+          <UIcon name="i-heroicons-chevron-right" :class="['w-4 h-4', roleTheme.sub3]" />
+          <span :class="['text-sm font-medium', roleTheme.sub1]">休暇承認</span>
         </div>
         <div class="flex items-center gap-3">
-          <span class="text-sm text-blue-100 hidden sm:block">{{ authStore.user?.name }} さん</span>
+          <span :class="['text-sm hidden sm:block', roleTheme.sub1]">{{ authStore.user?.name }} さん</span>
           <UButton variant="ghost" size="sm" icon="i-heroicons-arrow-right-on-rectangle" class="!bg-red-500 !text-white hover:!bg-red-600 transition-all duration-200 font-medium rounded-lg" @click="authStore.logout()">
             ログアウト
           </UButton>

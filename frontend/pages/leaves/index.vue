@@ -85,12 +85,14 @@ const leaveTypeLabel: Record<string, string> = {
 function fmtDate(s: string) {
   return new Date(s + "T00:00:00").toLocaleDateString("ja-JP", { month: "numeric", day: "numeric", weekday: "short" })
 }
+
+const { roleTheme } = useRoleTheme()
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-green-50 via-teal-50 to-cyan-50">
+  <div :class="['min-h-screen', roleTheme.pageBg]">
     <!-- ヘッダー -->
-    <header class="bg-gradient-to-r from-blue-700 to-indigo-800 shadow-lg">
+    <header :class="[roleTheme.header, 'shadow-lg']">
       <div class="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
           <NuxtLink to="/" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
@@ -99,11 +101,11 @@ function fmtDate(s: string) {
             </div>
             <span class="text-lg font-bold text-white">AttendEase</span>
           </NuxtLink>
-          <UIcon name="i-heroicons-chevron-right" class="w-4 h-4 text-blue-300" />
-          <span class="text-sm text-blue-100 font-medium">休暇申請</span>
+          <UIcon name="i-heroicons-chevron-right" :class="['w-4 h-4', roleTheme.sub3]" />
+          <span :class="['text-sm font-medium', roleTheme.sub1]">休暇申請</span>
         </div>
         <div class="flex items-center gap-3">
-          <span class="text-sm text-blue-100 hidden sm:block">{{ authStore.user?.name }} さん</span>
+          <span :class="['text-sm hidden sm:block', roleTheme.sub1]">{{ authStore.user?.name }} さん</span>
           <UButton variant="ghost" size="sm" icon="i-heroicons-arrow-right-on-rectangle" class="!bg-red-500 !text-white hover:!bg-red-600 transition-all duration-200 font-medium rounded-lg" @click="authStore.logout()">
             ログアウト
           </UButton>

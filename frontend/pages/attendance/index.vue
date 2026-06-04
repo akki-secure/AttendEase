@@ -104,12 +104,14 @@ function fmtTotalHours(min: number) {
   const m = min % 60
   return `${h}時間${m}分`
 }
+
+const { roleTheme } = useRoleTheme()
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+  <div :class="['min-h-screen', roleTheme.pageBg]">
     <!-- ヘッダー -->
-    <header class="bg-gradient-to-r from-blue-700 to-indigo-800 shadow-lg">
+    <header :class="[roleTheme.header, 'shadow-lg']">
       <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
           <NuxtLink to="/" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
@@ -118,11 +120,11 @@ function fmtTotalHours(min: number) {
             </div>
             <span class="text-lg font-bold text-white">AttendEase</span>
           </NuxtLink>
-          <UIcon name="i-heroicons-chevron-right" class="w-4 h-4 text-blue-300" />
-          <span class="text-sm text-blue-100 font-medium">勤怠一覧</span>
+          <UIcon name="i-heroicons-chevron-right" :class="['w-4 h-4', roleTheme.sub3]" />
+          <span :class="['text-sm font-medium', roleTheme.sub1]">勤怠一覧</span>
         </div>
         <div class="flex items-center gap-3">
-          <span class="text-sm text-blue-100 hidden sm:block">{{ authStore.user?.name }} さん</span>
+          <span :class="['text-sm hidden sm:block', roleTheme.sub1]">{{ authStore.user?.name }} さん</span>
           <UButton variant="ghost" size="sm" icon="i-heroicons-arrow-right-on-rectangle" class="!bg-red-500 !text-white hover:!bg-red-600 transition-all duration-200 font-medium rounded-lg" @click="authStore.logout()">
             ログアウト
           </UButton>
@@ -155,7 +157,7 @@ function fmtTotalHours(min: number) {
         </div>
         <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 text-center">
           <p class="text-xs text-gray-500 mb-1">総労働時間</p>
-          <p class="text-2xl font-bold text-blue-700">{{ fmtTotalHours(monthly.total_work_minutes) }}</p>
+          <p class="text-2xl font-bold text-brand-700">{{ fmtTotalHours(monthly.total_work_minutes) }}</p>
         </div>
         <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 text-center col-span-2 sm:col-span-1">
           <p class="text-xs text-gray-500 mb-1">残業時間</p>

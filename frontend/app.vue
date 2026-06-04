@@ -1,8 +1,16 @@
 <script setup lang="ts">
+import { unlockAudio } from "~/stores/notifications"
+
 const authStore = useAuthStore()
 const notifStore = useNotificationsStore()
 
 onMounted(() => {
+  const onFirstInteraction = () => {
+    unlockAudio()
+    document.removeEventListener("pointerdown", onFirstInteraction)
+  }
+  document.addEventListener("pointerdown", onFirstInteraction)
+
   watch(
     () => authStore.isLoggedIn,
     (loggedIn) => {

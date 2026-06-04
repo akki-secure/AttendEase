@@ -66,12 +66,12 @@ export function useLoginForm() {
   })
 
   const onSubmitOtp = otpForm.handleSubmit(async (values) => {
+    unlockAudio()
     await authStore.login({
       employee_id: storedEmployeeId.value,
       otp: values.otp,
     })
     storedEmployeeId.value = ""
-    unlockAudio()
   })
 
   async function resendOtp() {

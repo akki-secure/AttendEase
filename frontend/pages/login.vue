@@ -96,7 +96,7 @@ const {
 
       <p class="text-center text-sm text-gray-500 mt-4">
         アカウントをお持ちでない方は
-        <NuxtLink to="/register" class="text-blue-600 hover:underline font-medium">新規登録</NuxtLink>
+        <NuxtLink to="/register" class="text-brand-600 hover:underline font-medium">新規登録</NuxtLink>
       </p>
     </template>
 

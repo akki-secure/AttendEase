@@ -86,12 +86,14 @@ function otColor(m: number) {
 }
 
 await fetchSummary()
+
+const { roleTheme } = useRoleTheme()
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+  <div :class="['min-h-screen', roleTheme.pageBg]">
     <!-- ヘッダー -->
-    <header class="bg-gradient-to-r from-blue-700 to-indigo-800 shadow-lg">
+    <header :class="[roleTheme.header, 'shadow-lg']">
       <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
           <NuxtLink to="/" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
@@ -100,11 +102,11 @@ await fetchSummary()
             </div>
             <span class="text-lg font-bold text-white">AttendEase</span>
           </NuxtLink>
-          <UIcon name="i-heroicons-chevron-right" class="w-4 h-4 text-blue-300" />
-          <span class="text-sm text-blue-100 font-medium">勤怠レポート</span>
+          <UIcon name="i-heroicons-chevron-right" :class="['w-4 h-4', roleTheme.sub3]" />
+          <span :class="['text-sm font-medium', roleTheme.sub1]">勤怠レポート</span>
         </div>
         <div class="flex items-center gap-3">
-          <span class="text-sm text-blue-100 hidden sm:block">{{ authStore.user?.name }} さん</span>
+          <span :class="['text-sm hidden sm:block', roleTheme.sub1]">{{ authStore.user?.name }} さん</span>
           <UButton
             variant="ghost" size="sm"
             icon="i-heroicons-arrow-right-on-rectangle"
@@ -119,14 +121,14 @@ await fetchSummary()
       <!-- タイトル + 月選択 -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div class="flex items-center gap-2">
-          <UIcon name="i-heroicons-chart-bar" class="w-6 h-6 text-indigo-600" />
+          <UIcon name="i-heroicons-chart-bar" class="w-6 h-6 text-brand-600" />
           <h1 class="text-xl font-bold text-gray-800">月次勤怠レポート</h1>
         </div>
         <div class="flex items-center gap-3">
           <input
             v-model="selectedMonth"
             type="month"
-            class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+            class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 bg-white"
             @change="fetchSummary"
           />
           <UButton
@@ -227,14 +229,14 @@ await fetchSummary()
               </tr>
 
               <!-- 合計行 -->
-              <tr class="bg-indigo-50 font-semibold border-t-2 border-indigo-100">
-                <td class="px-4 py-3 text-indigo-700" colspan="2">合計</td>
-                <td class="px-4 py-3 text-right text-indigo-700">
+              <tr class="bg-brand-50 font-semibold border-t-2 border-brand-100">
+                <td class="px-4 py-3 text-brand-700" colspan="2">合計</td>
+                <td class="px-4 py-3 text-right text-brand-700">
                   {{ summary.users.reduce((s, u) => s + u.work_days, 0) }}日
                 </td>
-                <td class="px-4 py-3 text-right text-indigo-700">{{ fmtMinutes(summary.total_work_minutes) }}</td>
-                <td class="px-4 py-3 text-right text-indigo-700">{{ fmtMinutes(summary.total_overtime_minutes) }}</td>
-                <td class="px-4 py-3 text-right text-indigo-700">
+                <td class="px-4 py-3 text-right text-brand-700">{{ fmtMinutes(summary.total_work_minutes) }}</td>
+                <td class="px-4 py-3 text-right text-brand-700">{{ fmtMinutes(summary.total_overtime_minutes) }}</td>
+                <td class="px-4 py-3 text-right text-brand-700">
                   {{ summary.users.reduce((s, u) => s + u.leave_days, 0) }}日
                 </td>
               </tr>

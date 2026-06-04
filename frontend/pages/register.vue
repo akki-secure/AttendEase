@@ -187,7 +187,7 @@ async function onSubmit() {
 
     <p class="text-center text-sm text-gray-500 mt-4">
       すでにアカウントをお持ちの方は
-      <NuxtLink to="/login" class="text-blue-600 hover:underline font-medium">ログイン</NuxtLink>
+      <NuxtLink to="/login" class="text-brand-600 hover:underline font-medium">ログイン</NuxtLink>
     </p>
   </div>
 </template>
