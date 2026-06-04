@@ -89,6 +89,11 @@ docker compose exec backend python -m scripts.seed
 | EMP002 | Password1! | 承認担当者 |
 | EMP001 | Password1! | 一般社員 |
 
+> **複数ユーザーで同時に動作確認する場合は、異なるブラウザを使用してください。**
+> 同一ブラウザではセッションが共有されるため、別ユーザーとしてログインできません。
+>
+> ブラウザの例：Google Chrome / Firefox / Safari / Microsoft Edge
+
 ### 停止
 
 ```bash

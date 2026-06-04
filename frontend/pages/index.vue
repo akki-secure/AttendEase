@@ -85,18 +85,18 @@ const canCorrect = computed(() =>
 // 出勤時刻の直接修正（出勤中のみ・承認不要）
 const isFixingClockIn = ref(false)
 const fixClockInTime = ref("")
-const fixClockInWorkType = ref<WorkType>("office")
+const fixClockInWorkType = ref<WorkType | null>(null)
 
 function startFixClockIn() {
   fixClockInTime.value = fmt(attendanceStore.today?.record?.clock_in)
-  fixClockInWorkType.value = (attendanceStore.today?.record?.work_type as WorkType) ?? "office"
+  fixClockInWorkType.value = (attendanceStore.today?.record?.work_type as WorkType) ?? null
   isFixingClockIn.value = true
 }
 
 async function handleFixClockIn() {
   try {
     await attendanceStore.fixClockIn(toIso(fixClockInTime.value), fixClockInWorkType.value)
-    const typeLabel = fixClockInWorkType.value === "office" ? "出社" : "リモートワーク"
+    const typeLabel = fixClockInWorkType.value === "office" ? "出社" : fixClockInWorkType.value === "remote" ? "リモートワーク" : "未設定"
     toast.add({ title: `出勤時刻を ${fixClockInTime.value} に修正しました（${typeLabel}）`, color: "green", icon: "i-heroicons-check-circle" })
     isFixingClockIn.value = false
   } catch {
@@ -299,8 +299,8 @@ const annualOtPct  = computed(() => Math.min((annualOtMin.value / OT_LIMIT_YEAR)
                 @click="handleClockIn">出勤する</UButton>
             </template>
 
-            <!-- 出勤中: 時刻表示 + 修正ボタン -->
-            <template v-else-if="canClockOut">
+            <!-- 出勤中 / 退勤済: 時刻表示 + 修正ボタン -->
+            <template v-else-if="canClockOut || attendanceStore.today?.status === 'CLOSED'">
               <template v-if="!isFixingClockIn">
                 <p class="text-3xl font-bold text-green-800 font-mono py-1">
                   {{ fmt(attendanceStore.today?.record?.clock_in) }}
@@ -318,51 +318,12 @@ const annualOtPct  = computed(() => Math.min((annualOtMin.value / OT_LIMIT_YEAR)
                   <button
                     class="flex-1 py-1.5 transition-colors"
                     :class="fixClockInWorkType === 'office' ? 'bg-green-600 text-white' : 'bg-white text-green-700 hover:bg-green-50'"
-                    @click="fixClockInWorkType = 'office'"
+                    @click="fixClockInWorkType = fixClockInWorkType === 'office' ? null : 'office'"
                   >🏢 出社</button>
                   <button
                     class="flex-1 py-1.5 transition-colors border-l border-green-200"
                     :class="fixClockInWorkType === 'remote' ? 'bg-green-600 text-white' : 'bg-white text-green-700 hover:bg-green-50'"
-                    @click="fixClockInWorkType = 'remote'"
-                  >🏠 リモート</button>
-                </div>
-                <input v-model="fixClockInTime" type="time"
-                  class="w-full text-center text-2xl font-bold font-mono text-green-800 bg-white border border-green-300 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-green-400" />
-                <div class="flex gap-2 w-full">
-                  <UButton color="gray" variant="soft" size="xs" class="flex-1 justify-center"
-                    @click="isFixingClockIn = false">キャンセル</UButton>
-                  <UButton color="green" size="xs" icon="i-heroicons-check" class="flex-1 justify-center"
-                    :loading="attendanceStore.isLoading" :disabled="attendanceStore.isLoading"
-                    @click="handleFixClockIn">修正する</UButton>
-                </div>
-              </template>
-            </template>
-
-            <!-- 退勤済: 時刻表示 + 修正ボタン -->
-            <template v-else-if="attendanceStore.today?.status === 'CLOSED'">
-              <template v-if="!isFixingClockIn">
-                <p class="text-3xl font-bold text-green-800 font-mono py-1">
-                  {{ fmt(attendanceStore.today?.record?.clock_in) }}
-                </p>
-                <UBadge
-                  v-if="attendanceStore.today?.record?.work_type"
-                  :color="attendanceStore.today.record.work_type === 'office' ? 'green' : 'blue'"
-                  variant="subtle" size="xs"
-                >{{ attendanceStore.today.record.work_type === 'office' ? '🏢 出社' : '🏠 リモート' }}</UBadge>
-                <UButton color="green" variant="soft" size="xs" icon="i-heroicons-pencil-square"
-                  @click="startFixClockIn">時刻を修正</UButton>
-              </template>
-              <template v-else>
-                <div class="flex w-full rounded-lg overflow-hidden border border-green-200 text-xs font-semibold">
-                  <button
-                    class="flex-1 py-1.5 transition-colors"
-                    :class="fixClockInWorkType === 'office' ? 'bg-green-600 text-white' : 'bg-white text-green-700 hover:bg-green-50'"
-                    @click="fixClockInWorkType = 'office'"
-                  >🏢 出社</button>
-                  <button
-                    class="flex-1 py-1.5 transition-colors border-l border-green-200"
-                    :class="fixClockInWorkType === 'remote' ? 'bg-green-600 text-white' : 'bg-white text-green-700 hover:bg-green-50'"
-                    @click="fixClockInWorkType = 'remote'"
+                    @click="fixClockInWorkType = fixClockInWorkType === 'remote' ? null : 'remote'"
                   >🏠 リモート</button>
                 </div>
                 <input v-model="fixClockInTime" type="time"

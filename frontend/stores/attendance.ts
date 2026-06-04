@@ -69,12 +69,11 @@ export const useAttendanceStore = defineStore("attendance", () => {
     }
   }
 
-  async function fixClockIn(clockInIso: string, workType?: WorkType): Promise<AttendanceRecord> {
+  async function fixClockIn(clockInIso: string, workType?: WorkType | null): Promise<AttendanceRecord> {
     isLoading.value = true
     error.value = null
     try {
-      const body: Record<string, unknown> = { clock_in: clockInIso }
-      if (workType) body.work_type = workType
+      const body: Record<string, unknown> = { clock_in: clockInIso, work_type: workType ?? null }
       const record = await $fetch<AttendanceRecord>(
         `${config.public.apiBase}/api/v1/attendance/today/clock-in`,
         { method: "PATCH", headers: authHeaders(), body },
@@ -142,18 +141,14 @@ export const useAttendanceStore = defineStore("attendance", () => {
     workType: WorkType | null,
     breakMinutes: number,
   ): Promise<AttendanceRecord> {
-    try {
-      return await $fetch<AttendanceRecord>(
-        `${config.public.apiBase}/api/v1/attendance/record`,
-        {
-          method: "POST",
-          headers: authHeaders(),
-          body: { date, clock_in: clockIn, clock_out: clockOut, work_type: workType, break_minutes: breakMinutes },
-        },
-      )
-    } catch (err: unknown) {
-      throw err
-    }
+    return $fetch<AttendanceRecord>(
+      `${config.public.apiBase}/api/v1/attendance/record`,
+      {
+        method: "POST",
+        headers: authHeaders(),
+        body: { date, clock_in: clockIn, clock_out: clockOut, work_type: workType, break_minutes: breakMinutes },
+      },
+    )
   }
 
   async function fetchMonthly(month: string): Promise<MonthlyAttendanceResponse> {

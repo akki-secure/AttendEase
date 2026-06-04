@@ -1,4 +1,7 @@
 from datetime import date, datetime, timezone
+from zoneinfo import ZoneInfo
+
+_JST = ZoneInfo("Asia/Tokyo")
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import and_, extract, select
@@ -179,8 +182,7 @@ async def fix_today_clock_in(
         )
 
     record.clock_in = clock_in_dt
-    if payload.work_type is not None:
-        record.work_type = payload.work_type
+    record.work_type = payload.work_type
     await db.commit()
     await db.refresh(record)
     return _to_response(record)
@@ -222,15 +224,15 @@ async def create_past_record(
     db: AsyncSession = Depends(get_db),
 ) -> AttendanceResponse:
     """当月の過去日付の打刻を直接登録する（承認不要）"""
-    today = datetime.now(timezone.utc).date()
+    today_jst = datetime.now(_JST).date()
 
-    if payload.date >= today:
+    if payload.date >= today_jst:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="過去の日付のみ登録できます",
         )
 
-    first_of_month = today.replace(day=1)
+    first_of_month = today_jst.replace(day=1)
     if payload.date < first_of_month:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -243,6 +245,12 @@ async def create_past_record(
     clock_out_dt = payload.clock_out
     if clock_out_dt.tzinfo is None:
         clock_out_dt = clock_out_dt.replace(tzinfo=timezone.utc)
+
+    if clock_in_dt.astimezone(_JST).date() != payload.date:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="出勤時刻は指定日と同じ日付にしてください",
+        )
 
     if clock_out_dt <= clock_in_dt:
         raise HTTPException(
