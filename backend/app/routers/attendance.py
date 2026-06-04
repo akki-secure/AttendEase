@@ -1,4 +1,7 @@
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
+
+_JST = ZoneInfo("Asia/Tokyo")
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import and_, extract, select
@@ -72,7 +75,7 @@ async def get_today_status(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> TodayStatusResponse:
-    today = datetime.now(timezone.utc).date()
+    today = datetime.now(_JST).date()
     record = await _get_today_record(db, current_user.id, today)
 
     if record is None:
@@ -91,7 +94,7 @@ async def clock_in(
     clock_in_dt = payload.clock_in if payload.clock_in is not None else now
     if clock_in_dt.tzinfo is None:
         clock_in_dt = clock_in_dt.replace(tzinfo=timezone.utc)
-    today = now.date()
+    today = datetime.now(_JST).date()
 
     existing = await _get_today_record(db, current_user.id, today)
     if existing is not None:
@@ -161,7 +164,7 @@ async def fix_today_clock_in(
     db: AsyncSession = Depends(get_db),
 ) -> AttendanceResponse:
     """出勤中のみ: 本日の出勤時刻を直接修正する（承認不要）"""
-    today = datetime.now(timezone.utc).date()
+    today = datetime.now(_JST).date()
     record = await _get_today_record(db, current_user.id, today)
     if record is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="本日の打刻記録が見つかりません")
@@ -179,7 +182,7 @@ async def fix_today_clock_in(
         )
 
     record.clock_in = clock_in_dt
-    if payload.work_type is not None:
+    if "work_type" in payload.model_fields_set:
         record.work_type = payload.work_type
     await db.commit()
     await db.refresh(record)
@@ -193,7 +196,7 @@ async def fix_today_clock_out(
     db: AsyncSession = Depends(get_db),
 ) -> AttendanceResponse:
     """退勤済みのみ: 本日の退勤時刻を直接修正する（当日のみ承認不要）"""
-    today = datetime.now(timezone.utc).date()
+    today = datetime.now(_JST).date()
     record = await _get_today_record(db, current_user.id, today)
     if record is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="本日の打刻記録が見つかりません")
@@ -222,15 +225,15 @@ async def create_past_record(
     db: AsyncSession = Depends(get_db),
 ) -> AttendanceResponse:
     """当月の過去日付の打刻を直接登録する（承認不要）"""
-    today = datetime.now(timezone.utc).date()
+    today_jst = datetime.now(_JST).date()
 
-    if payload.date >= today:
+    if payload.date >= today_jst:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="過去の日付のみ登録できます",
         )
 
-    first_of_month = today.replace(day=1)
+    first_of_month = today_jst.replace(day=1)
     if payload.date < first_of_month:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -243,6 +246,18 @@ async def create_past_record(
     clock_out_dt = payload.clock_out
     if clock_out_dt.tzinfo is None:
         clock_out_dt = clock_out_dt.replace(tzinfo=timezone.utc)
+
+    if clock_in_dt.astimezone(_JST).date() != payload.date:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="出勤時刻は指定日と同じ日付にしてください",
+        )
+
+    if clock_out_dt.astimezone(_JST).date() > payload.date + timedelta(days=1):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="退勤時刻は翌日までにしてください",
+        )
 
     if clock_out_dt <= clock_in_dt:
         raise HTTPException(
