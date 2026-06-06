@@ -55,6 +55,10 @@ async function saveProfile() {
     toast.add({ title: nameError.value, color: "red", icon: "i-heroicons-exclamation-circle" })
     return
   }
+  if (emailError.value) {
+    toast.add({ title: emailError.value, color: "red", icon: "i-heroicons-exclamation-circle" })
+    return
+  }
   if (showPasswordForm.value) {
     if (!currentPassword.value || !newPassword.value || !confirmPassword.value) {
       toast.add({ title: "現在・新しい・確認の3つをすべて入力してください", color: "red", icon: "i-heroicons-exclamation-circle" })
@@ -110,6 +114,12 @@ const ROLE_LABEL: Record<string, string> = {
 
 const nameError = computed(() => {
   if (name.value.trim() === "") return "氏名は必須です"
+  return null
+})
+
+const emailError = computed(() => {
+  if (email.value.trim() === "") return "メールアドレスは必須です"
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) return "メールアドレスの形式が正しくありません"
   return null
 })
 
@@ -196,14 +206,16 @@ const { roleTheme } = useRoleTheme()
 
           <!-- メールアドレス -->
           <div>
-            <label class="block text-sm text-gray-500 mb-1">メールアドレス</label>
+            <label class="block text-sm text-gray-500 mb-1">メールアドレス <span class="text-red-500">*</span></label>
             <input
               v-model="email"
               type="email"
               placeholder="メールアドレス（通知の送信先）"
-              class="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
+              class="w-full bg-white border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2"
+              :class="emailError ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-brand-400'"
             />
-            <p class="text-xs text-gray-400 mt-1">申請・承認の通知メールを受け取るために使用されます</p>
+            <p v-if="emailError" class="text-xs text-red-500 mt-1">{{ emailError }}</p>
+            <p v-else class="text-xs text-gray-400 mt-1">申請・承認の通知メールを受け取るために使用されます</p>
           </div>
         </div>
 

@@ -50,6 +50,11 @@ async def update_profile(
     db: AsyncSession = Depends(get_db),
 ) -> ProfileResponse:
     if payload.name is not None:
+        if not payload.name.strip():
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="氏名は必須です",
+            )
         current_user.name = payload.name
 
     if payload.email is not None:
