@@ -110,47 +110,70 @@ docker compose down
 ## 画面遷移図
 
 ```mermaid
-flowchart TD
-  subgraph auth["認証"]
-    Login["/login ログイン"]
-    Register["/register ユーザー登録 ADMIN限定"]
-    PwReset["/password-reset パスワードリセット"]
+flowchart LR
+  %% ─── 認証エリア ───────────────────────────────────────────
+  subgraph AUTH["🔐  認証"]
+    direction TB
+    Login("🏠 ログイン\n/login")
+    PwReset("🔑 パスワードリセット\n/password-reset")
+    Register("➕ ユーザー登録\n/register")
   end
 
-  subgraph employee["一般社員 / 承認担当者"]
-    Dashboard["/ ダッシュボード"]
-    Attendance["/attendance 出退勤打刻"]
-    Leaves["/leaves 休暇申請一覧"]
-    Overtime["/overtime 残業申請一覧"]
-    Reports["/reports 月次レポート"]
-    Profile["/profile プロフィール"]
-    Notif["/notifications 通知"]
+  %% ─── 共通機能 ─────────────────────────────────────────────
+  subgraph COMMON["👤  全ロール共通"]
+    direction TB
+    Dashboard("📊 ダッシュボード\n/")
+    Attendance("🕐 出退勤打刻\n/attendance")
+    Leaves("🌴 休暇申請\n/leaves")
+    Overtime("⏰ 残業申請\n/overtime")
+    Reports("📈 月次レポート\n/reports")
+    Profile("⚙️ プロフィール\n/profile")
+    Notif("🔔 通知\n/notifications")
   end
 
-  subgraph manager["承認担当者のみ"]
-    LeaveApprove["/leaves/approve 休暇申請承認"]
-    OTApprove["/overtime/approve 残業申請承認"]
+  %% ─── 承認担当者 ───────────────────────────────────────────
+  subgraph MANAGER["✅  MANAGER / ADMIN"]
+    direction TB
+    LeaveApprove("✔️ 休暇申請承認\n/leaves/approve")
+    OTApprove("✔️ 残業申請承認\n/overtime/approve")
   end
 
-  subgraph admin["ADMIN限定"]
-    AdminUsers["/admin/users ユーザー管理"]
-    AdminLeave["/admin/leave-balances 有給残日数管理"]
+  %% ─── 管理者専用 ───────────────────────────────────────────
+  subgraph ADMIN["🛡️  ADMIN 限定"]
+    direction TB
+    AdminUsers("👥 ユーザー管理\n/admin/users")
+    AdminLeave("📋 有給残日数管理\n/admin/leave-balances")
   end
 
-  Login -->|認証成功| Dashboard
-  Login -->|パスワード忘れ| PwReset
-  PwReset -->|リセット完了| Login
+  %% ─── 遷移 ────────────────────────────────────────────────
+  Login      -->|"✅ 認証成功"| Dashboard
+  Login      -->|"❓ パスワード忘れ"| PwReset
+  PwReset    -->|"完了"| Login
+  AdminUsers -->|"新規作成"| Register
+
   Dashboard --> Attendance
   Dashboard --> Leaves
   Dashboard --> Overtime
   Dashboard --> Reports
   Dashboard --> Profile
   Dashboard --> Notif
-  Dashboard -->|MANAGER/ADMIN| LeaveApprove
-  Dashboard -->|MANAGER/ADMIN| OTApprove
-  Dashboard -->|ADMIN| AdminUsers
-  Dashboard -->|ADMIN| AdminLeave
-  AdminUsers --> Register
+  Dashboard -->|"MANAGER / ADMIN"| LeaveApprove
+  Dashboard -->|"MANAGER / ADMIN"| OTApprove
+  Dashboard -->|"ADMIN"| AdminUsers
+  Dashboard -->|"ADMIN"| AdminLeave
+
+  %% ─── スタイル ────────────────────────────────────────────
+  classDef authStyle   fill:#dbeafe,stroke:#3b82f6,color:#1e3a8a,rx:8
+  classDef commonStyle fill:#dcfce7,stroke:#22c55e,color:#14532d,rx:8
+  classDef mgrStyle    fill:#fef9c3,stroke:#eab308,color:#713f12,rx:8
+  classDef adminStyle  fill:#fce7f3,stroke:#ec4899,color:#831843,rx:8
+  classDef hubStyle    fill:#f0fdf4,stroke:#16a34a,color:#14532d,font-weight:bold,rx:8
+
+  class Login,PwReset,Register authStyle
+  class Attendance,Leaves,Overtime,Reports,Profile,Notif commonStyle
+  class Dashboard hubStyle
+  class LeaveApprove,OTApprove mgrStyle
+  class AdminUsers,AdminLeave adminStyle
 ```
 
 ---
