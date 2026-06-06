@@ -111,30 +111,30 @@ docker compose down
 
 ```mermaid
 flowchart TD
-  subgraph 認証
-    Login["/login\nログイン"]
-    Register["/register\nユーザー登録\n（ADMIN限定）"]
-    PwReset["/password-reset\nパスワードリセット"]
+  subgraph auth["認証"]
+    Login["/login ログイン"]
+    Register["/register ユーザー登録 ADMIN限定"]
+    PwReset["/password-reset パスワードリセット"]
   end
 
-  subgraph 一般社員・承認担当者
-    Dashboard["/\nダッシュボード"]
-    Attendance["/attendance\n出退勤打刻"]
-    Leaves["/leaves\n休暇申請一覧"]
-    Overtime["/overtime\n残業申請一覧"]
-    Reports["/reports\n月次レポート"]
-    Profile["/profile\nプロフィール"]
-    Notif["/notifications\n通知"]
+  subgraph employee["一般社員 / 承認担当者"]
+    Dashboard["/ ダッシュボード"]
+    Attendance["/attendance 出退勤打刻"]
+    Leaves["/leaves 休暇申請一覧"]
+    Overtime["/overtime 残業申請一覧"]
+    Reports["/reports 月次レポート"]
+    Profile["/profile プロフィール"]
+    Notif["/notifications 通知"]
   end
 
-  subgraph 承認担当者のみ
-    LeaveApprove["/leaves/approve\n休暇申請承認"]
-    OTApprove["/overtime/approve\n残業申請承認"]
+  subgraph manager["承認担当者のみ"]
+    LeaveApprove["/leaves/approve 休暇申請承認"]
+    OTApprove["/overtime/approve 残業申請承認"]
   end
 
-  subgraph ADMIN限定
-    AdminUsers["/admin/users\nユーザー管理"]
-    AdminLeave["/admin/leave-balances\n有給残日数管理"]
+  subgraph admin["ADMIN限定"]
+    AdminUsers["/admin/users ユーザー管理"]
+    AdminLeave["/admin/leave-balances 有給残日数管理"]
   end
 
   Login -->|認証成功| Dashboard
@@ -146,8 +146,8 @@ flowchart TD
   Dashboard --> Reports
   Dashboard --> Profile
   Dashboard --> Notif
-  Dashboard -->|MANAGER / ADMIN| LeaveApprove
-  Dashboard -->|MANAGER / ADMIN| OTApprove
+  Dashboard -->|MANAGER/ADMIN| LeaveApprove
+  Dashboard -->|MANAGER/ADMIN| OTApprove
   Dashboard -->|ADMIN| AdminUsers
   Dashboard -->|ADMIN| AdminLeave
   AdminUsers --> Register
