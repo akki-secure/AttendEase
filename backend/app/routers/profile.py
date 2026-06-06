@@ -1,6 +1,10 @@
+import re
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
+
+_ASCII_ONLY = re.compile(r'^[\x20-\x7E]+$')
 
 from app.core.deps import get_current_user, get_db
 from app.core.security import get_password_hash, verify_password
@@ -66,6 +70,11 @@ async def update_profile(
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="新しいパスワードは8文字以上にしてください",
+            )
+        if not _ASCII_ONLY.match(payload.new_password):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="パスワードは英数字・記号（ASCII）のみ使用できます",
             )
         current_user.hashed_password = get_password_hash(payload.new_password)
 
