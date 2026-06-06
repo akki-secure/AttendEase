@@ -87,6 +87,10 @@ function otColor(m: number) {
   return "text-gray-700"
 }
 
+function printReport() {
+  window.print()
+}
+
 await fetchSummary()
 
 const { roleTheme } = useRoleTheme()
@@ -140,6 +144,14 @@ const { roleTheme } = useRoleTheme()
             :loading="isLoading"
             @click="fetchSummary"
           >更新</UButton>
+          <UButton
+            v-if="summary"
+            color="gray"
+            variant="soft"
+            icon="i-heroicons-printer"
+            class="print:hidden"
+            @click="printReport"
+          >印刷 / PDF 保存</UButton>
         </div>
       </div>
 
@@ -149,7 +161,7 @@ const { roleTheme } = useRoleTheme()
       </div>
 
       <!-- CSV ダウンロードボタン -->
-      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <div class="print:hidden bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
         <div class="flex items-center gap-2 mb-4">
           <UIcon name="i-heroicons-arrow-down-tray" class="w-5 h-5 text-gray-500" />
           <h2 class="font-semibold text-gray-800">CSV ダウンロード</h2>
@@ -190,9 +202,19 @@ const { roleTheme } = useRoleTheme()
 
       <!-- サマリーテーブル -->
       <div v-else-if="summary" class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+        <!-- 印刷時のみ表示するタイトル -->
+        <div class="print-only px-6 pt-6 pb-2">
+          <h1 class="text-2xl font-bold text-gray-900">月次勤怠レポート</h1>
+          <p class="text-gray-600 mt-1">対象月：{{ summary.month }} &nbsp;／&nbsp; {{ summary.users.length }}名</p>
+        </div>
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between print:hidden">
           <h2 class="font-semibold text-gray-800">ユーザー別月次サマリー</h2>
           <UBadge color="indigo" variant="subtle">{{ summary.users.length }}名</UBadge>
+        </div>
+        <!-- 印刷時のみ表示するサブヘッダー -->
+        <div class="print-only px-6 py-3 border-b border-gray-200 items-center justify-between" style="display:none">
+          <h2 class="font-semibold text-gray-800">ユーザー別月次サマリー</h2>
+          <span class="text-sm text-gray-500">{{ summary.users.length }}名</span>
         </div>
 
         <div class="overflow-x-auto">
@@ -265,3 +287,42 @@ const { roleTheme } = useRoleTheme()
     </main>
   </div>
 </template>
+
+<style>
+.print-only {
+  display: none;
+}
+
+@media print {
+  header,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  body {
+    background: white !important;
+  }
+
+  .min-h-screen {
+    background: white !important;
+    min-height: unset !important;
+  }
+
+  main {
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+
+  table {
+    font-size: 11px;
+  }
+
+  th, td {
+    padding: 6px 8px !important;
+  }
+}
+</style>
