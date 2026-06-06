@@ -3,16 +3,21 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import delete, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.core.deps import get_db
-from app.core.email import send_otp_email
+from app.core.email import send_otp_email, send_password_reset_email
 from app.core.security import create_access_token, dummy_verify, get_password_hash, verify_password
 from app.models.otp import OtpCode
+from app.models.password_reset_token import PasswordResetToken
 from app.models.user import User
 from app.schemas.auth import (
     LoginRequest,
+    PasswordResetConfirmSchema,
+    PasswordResetRequestResponse,
+    PasswordResetRequestSchema,
     PreCheckRequest,
     PreCheckResponse,
     RegisterRequest,
@@ -185,3 +190,93 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)) -> To
 
     token = create_access_token({"sub": user.employee_id, "name": user.name, "role": user.role, "user_id": user.id})
     return TokenResponse(access_token=token)
+
+
+@router.post("/password-reset/request", response_model=PasswordResetRequestResponse)
+async def password_reset_request(
+    payload: PasswordResetRequestSchema, db: AsyncSession = Depends(get_db)
+) -> PasswordResetRequestResponse:
+    result = await db.execute(select(User).where(User.employee_id == payload.employee_id, User.is_active.is_(True)))
+    user = result.scalar_one_or_none()
+
+    # ユーザーが存在しない場合でも同じレスポンスを返す（ユーザー列挙攻撃対策）
+    if user is None or not user.email:
+        if settings.DEV_OTP_BYPASS:
+            return PasswordResetRequestResponse(ok=True, email_hint="[DEV] no-email")
+        return PasswordResetRequestResponse(ok=True, email_hint="re***@example.com")
+
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    # 再送信レート制限
+    recent_result = await db.execute(
+        select(PasswordResetToken)
+        .where(PasswordResetToken.employee_id == payload.employee_id, PasswordResetToken.used.is_(False))
+        .order_by(PasswordResetToken.created_at.desc())
+    )
+    recent = recent_result.scalar_one_or_none()
+    if recent is not None:
+        elapsed = (now - recent.created_at).total_seconds()
+        if elapsed < settings.RESET_RESEND_INTERVAL_SECONDS:
+            wait = int(settings.RESET_RESEND_INTERVAL_SECONDS - elapsed)
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"再送信は{wait}秒後に可能です",
+            )
+
+    # 古い未使用トークンを削除してから新規作成
+    await db.execute(
+        delete(PasswordResetToken).where(
+            PasswordResetToken.employee_id == payload.employee_id, PasswordResetToken.used.is_(False)
+        )
+    )
+
+    code = str(secrets.randbelow(1_000_000)).zfill(6)
+    hashed_code = get_password_hash(code)
+    expires_at = now + timedelta(minutes=settings.RESET_EXPIRE_MINUTES)
+    db.add(PasswordResetToken(employee_id=payload.employee_id, code=hashed_code, expires_at=expires_at))
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"再送信は{settings.RESET_RESEND_INTERVAL_SECONDS}秒後に可能です",
+        )
+
+    if settings.DEV_OTP_BYPASS:
+        return PasswordResetRequestResponse(ok=True, email_hint=f"[DEV] {code}")
+
+    send_password_reset_email(user.email, code)
+    return PasswordResetRequestResponse(ok=True, email_hint=_mask_email(user.email))
+
+
+@router.post("/password-reset/confirm", status_code=status.HTTP_204_NO_CONTENT)
+async def password_reset_confirm(
+    payload: PasswordResetConfirmSchema, db: AsyncSession = Depends(get_db)
+) -> None:
+    result = await db.execute(select(User).where(User.employee_id == payload.employee_id, User.is_active.is_(True)))
+    user = result.scalar_one_or_none()
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="認証コードが正しくありません")
+
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    await db.execute(delete(PasswordResetToken).where(PasswordResetToken.expires_at < now))
+
+    token_result = await db.execute(
+        select(PasswordResetToken)
+        .where(
+            PasswordResetToken.employee_id == payload.employee_id,
+            PasswordResetToken.used.is_(False),
+            PasswordResetToken.expires_at > now,
+        )
+        .order_by(PasswordResetToken.created_at.desc())
+    )
+    token_record = token_result.scalar_one_or_none()
+
+    if token_record is None or not verify_password(payload.token, token_record.code):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="認証コードが正しくありません")
+
+    token_record.used = True
+    user.hashed_password = get_password_hash(payload.new_password)
+    user.failed_login_count = 0
+    await db.commit()

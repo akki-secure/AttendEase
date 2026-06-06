@@ -1,7 +1,10 @@
+import re
 from datetime import datetime, timedelta, timezone
 
 from jose import jwt
 from passlib.context import CryptContext
+
+ASCII_ONLY = re.compile(r"^[\x20-\x7E]+$")
 
 from app.config import settings
 

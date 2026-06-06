@@ -98,6 +98,9 @@ const {
         アカウントをお持ちでない方は
         <NuxtLink to="/register" class="text-brand-600 hover:underline font-medium">新規登録</NuxtLink>
       </p>
+      <p class="text-center text-sm text-gray-500 mt-2">
+        <NuxtLink to="/password-reset" class="text-brand-600 hover:underline font-medium">パスワードをお忘れの方</NuxtLink>
+      </p>
     </template>
 
     <!-- ステップ2: OTP -->
