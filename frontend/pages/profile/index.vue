@@ -55,13 +55,19 @@ async function saveProfile() {
     toast.add({ title: nameError.value, color: "red", icon: "i-heroicons-exclamation-circle" })
     return
   }
-  if (showPasswordForm.value && newPasswordError.value) {
-    toast.add({ title: newPasswordError.value, color: "red", icon: "i-heroicons-exclamation-circle" })
-    return
-  }
-  if (showPasswordForm.value && newPassword.value !== confirmPassword.value) {
-    toast.add({ title: "新しいパスワードが一致しません", color: "red", icon: "i-heroicons-exclamation-circle" })
-    return
+  if (showPasswordForm.value) {
+    if (!currentPassword.value || !newPassword.value || !confirmPassword.value) {
+      toast.add({ title: "現在・新しい・確認の3つをすべて入力してください", color: "red", icon: "i-heroicons-exclamation-circle" })
+      return
+    }
+    if (newPasswordError.value) {
+      toast.add({ title: newPasswordError.value, color: "red", icon: "i-heroicons-exclamation-circle" })
+      return
+    }
+    if (newPassword.value !== confirmPassword.value) {
+      toast.add({ title: "新しいパスワードが一致しません", color: "red", icon: "i-heroicons-exclamation-circle" })
+      return
+    }
   }
   isSaving.value = true
   try {
