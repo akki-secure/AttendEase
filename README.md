@@ -8,6 +8,132 @@
 > （例：管理者は Chrome、一般社員は Firefox、承認担当者は Safari）
 
 ---
+## AttendEase(勤怠管理システム)の流れ
+1.「http://localhost:3000/login」にアクセスすると「ログイン画面」が、表示されます。
+
+
+
+
+<img width="647" height="567" alt="スクリーンショット 2026-06-10 20 53 01" src="https://github.com/user-attachments/assets/62bdd3c4-bfa1-4c42-a57a-6fb16f05c159" />
+
+
+
+
+
+2.一般社員として、新規ログインする場合は、新規登録をクリックしてください。新規登録の完了を登録をする前に、必ず、「社員ID」と「パスワード」はメモするようにお願いします。新規アカウントに必要な「社員ID」、「氏名」、「メールアドレス」、「パスワード」を入力して、「登録」をクリックして完了するとログイン画面に戻り、新規アカウントの作成が完了しました。
+
+
+
+
+
+<img width="647" height="603" alt="スクリーンショット 2026-06-10 20 56 01" src="https://github.com/user-attachments/assets/28d5007c-bba1-4bdc-8210-59e8f93899bc" />
+
+
+
+
+
+
+
+3.新規アカウントで作成したユーザーIDとパスワードを入力後、「次へ進む」をクリックしてください。
+
+
+
+
+
+
+
+<img width="647" height="603" alt="スクリーンショット 2026-06-10 21 10 50" src="https://github.com/user-attachments/assets/bd626dd7-8b58-45f3-a70a-21fe0e562f80" />
+
+
+
+
+
+
+
+
+
+
+
+※間違った社員IDまたはパスワードを入力してログインしますと、「社員IDまたはパスワードが正しくありません」とエラーが表示されますので、ご注意ください。
+
+
+
+
+<img width="647" height="603" alt="スクリーンショット 2026-06-10 21 08 40" src="https://github.com/user-attachments/assets/f35ce9e7-1a7d-481d-89b4-d4d7cb8b16a9" />
+
+
+
+
+
+
+
+4. 「認証コード」を認証コードのフォームに入力して、ログインしてください。※もし、時間内に入力できない場合は、「再送信」をクリックして、認証コードのフォームに入力してください。
+
+
+
+
+
+
+<img width="647" height="603" alt="スクリーンショット 2026-06-10 21 14 33" src="https://github.com/user-attachments/assets/27fff5ec-b146-4e79-b3c8-842c6234abf1" />
+
+
+
+
+
+
+
+
+
+5.一般社員のログイン画面が表示されます。
+
+
+
+<img width="1056" height="603" alt="スクリーンショット 2026-06-10 21 15 07" src="https://github.com/user-attachments/assets/e689613b-cf0e-4f95-8c1e-ff19ef4141c2" />
+
+
+
+
+
+6.勤怠登録の「出勤」と「退勤」では、手動での入力もしくは、時計のアイコンをクリックして、数字を選択しての時間設定を行い、出勤すると退勤するをクリックしてください。。※「出勤」のみが、出勤もしくは、リモートを選択することができます。
+
+
+
+
+
+
+(出勤もしくは、リモートの場合)
+
+<img width="478" height="371" alt="スクリーンショット 2026-06-10 21 43 57" src="https://github.com/user-attachments/assets/82780569-82eb-47ab-8b39-353fba04d1b2" />
+
+
+
+
+
+(退勤の場合)
+
+
+
+
+<img width="478" height="371" alt="スクリーンショット 2026-06-10 21 47 55" src="https://github.com/user-attachments/assets/d1988fc3-87a1-4e48-aa42-d985ce43c838" />
+
+
+
+
+7.「勤怠の時間」の結果が表示されます。※もし、出勤もしくは、退勤で、間違って入力した時間を修正することも可能です。
+
+
+
+
+<img width="478" height="467" alt="スクリーンショット 2026-06-10 21 49 56" src="https://github.com/user-attachments/assets/c65d8040-9c38-428c-88dc-9d205017084c" />
+
+
+
+
+
+
+8.
+
+---
 
 ## 機能
 
