@@ -91,7 +91,7 @@ docker compose exec backend python -m scripts.seed
 | 社員ID | パスワード | ロール |
 |--------|-----------|--------|
 | ADMIN001 | Admin1234! | システム管理者 |
-| EMP002 | Password1! | 承認担当者 |
+| EMP002 | NewPass456! | 承認担当者 |
 | EMP001 | Password1! | 一般社員 |
 
 > **複数ユーザーで同時に動作確認する場合は、異なるブラウザを使用してください。**
@@ -99,11 +99,28 @@ docker compose exec backend python -m scripts.seed
 >
 > ブラウザの例：Google Chrome / Firefox / Safari / Microsoft Edge
 
-### 停止
+### 停止・削除
+
+**コンテナを停止する（データは保持）**
+
+```bash
+docker compose stop
+```
+
+**コンテナを停止して削除する（データは保持）**
 
 ```bash
 docker compose down
 ```
+
+**コンテナ・ボリューム・イメージをすべて削除する（データも消える）**
+
+```bash
+docker compose down --volumes --rmi all
+```
+
+> [!WARNING]
+> `--volumes` を付けるとデータベースのデータも削除されます。再度 `alembic upgrade head` と `scripts.seed` の実行が必要です。
 
 ---
 
