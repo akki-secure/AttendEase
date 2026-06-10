@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { extractApiError } from "~/utils/validation"
+import { ASCII_ONLY, extractApiError } from "~/utils/validation"
 
 const authStore = useAuthStore()
 const config = useRuntimeConfig()
@@ -51,9 +51,27 @@ async function fetchProfile() {
 await fetchProfile()
 
 async function saveProfile() {
-  if (showPasswordForm.value && newPassword.value !== confirmPassword.value) {
-    toast.add({ title: "新しいパスワードが一致しません", color: "red", icon: "i-heroicons-exclamation-circle" })
+  if (nameError.value) {
+    toast.add({ title: nameError.value, color: "red", icon: "i-heroicons-exclamation-circle" })
     return
+  }
+  if (emailError.value) {
+    toast.add({ title: emailError.value, color: "red", icon: "i-heroicons-exclamation-circle" })
+    return
+  }
+  if (showPasswordForm.value) {
+    if (!currentPassword.value || !newPassword.value || !confirmPassword.value) {
+      toast.add({ title: "現在・新しい・確認の3つをすべて入力してください", color: "red", icon: "i-heroicons-exclamation-circle" })
+      return
+    }
+    if (newPasswordError.value) {
+      toast.add({ title: newPasswordError.value, color: "red", icon: "i-heroicons-exclamation-circle" })
+      return
+    }
+    if (newPassword.value !== confirmPassword.value) {
+      toast.add({ title: "新しいパスワードが一致しません", color: "red", icon: "i-heroicons-exclamation-circle" })
+      return
+    }
   }
   isSaving.value = true
   try {
@@ -93,6 +111,24 @@ const ROLE_LABEL: Record<string, string> = {
   MANAGER: "マネージャー",
   ADMIN: "管理者",
 }
+
+const nameError = computed(() => {
+  if (name.value.trim() === "") return "氏名は必須です"
+  return null
+})
+
+const emailError = computed(() => {
+  if (email.value.trim() === "") return "メールアドレスは必須です"
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) return "メールアドレスの形式が正しくありません"
+  return null
+})
+
+const newPasswordError = computed(() => {
+  if (!newPassword.value) return null
+  if (newPassword.value.length < 8) return "8文字以上で入力してください"
+  if (!ASCII_ONLY.test(newPassword.value)) return "英数字・記号（ASCII）のみ使用できます"
+  return null
+})
 
 const { roleTheme } = useRoleTheme()
 </script>
@@ -157,25 +193,29 @@ const { roleTheme } = useRoleTheme()
 
           <!-- 氏名 -->
           <div>
-            <label class="block text-sm text-gray-500 mb-1">氏名</label>
+            <label class="block text-sm text-gray-500 mb-1">氏名 <span class="text-red-500">*</span></label>
             <input
               v-model="name"
               type="text"
               placeholder="氏名"
-              class="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
+              class="w-full bg-white border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2"
+              :class="nameError ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-brand-400'"
             />
+            <p v-if="nameError" class="text-xs text-red-500 mt-1">{{ nameError }}</p>
           </div>
 
           <!-- メールアドレス -->
           <div>
-            <label class="block text-sm text-gray-500 mb-1">メールアドレス</label>
+            <label class="block text-sm text-gray-500 mb-1">メールアドレス <span class="text-red-500">*</span></label>
             <input
               v-model="email"
               type="email"
               placeholder="メールアドレス（通知の送信先）"
-              class="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
+              class="w-full bg-white border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2"
+              :class="emailError ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-brand-400'"
             />
-            <p class="text-xs text-gray-400 mt-1">申請・承認の通知メールを受け取るために使用されます</p>
+            <p v-if="emailError" class="text-xs text-red-500 mt-1">{{ emailError }}</p>
+            <p v-else class="text-xs text-gray-400 mt-1">申請・承認の通知メールを受け取るために使用されます</p>
           </div>
         </div>
 
@@ -215,8 +255,9 @@ const { roleTheme } = useRoleTheme()
                 <input
                   v-model="newPassword"
                   :type="showNewPassword ? 'text' : 'password'"
-                  placeholder="8文字以上"
-                  class="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 pr-11 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
+                  placeholder="8文字以上・英数字記号のみ"
+                  class="w-full bg-white border rounded-lg px-4 py-3 pr-11 text-sm focus:outline-none focus:ring-2"
+                  :class="newPasswordError ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-brand-400'"
                 />
                 <button
                   type="button"
@@ -226,6 +267,7 @@ const { roleTheme } = useRoleTheme()
                   <UIcon :name="showNewPassword ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'" class="w-5 h-5" />
                 </button>
               </div>
+              <p v-if="newPasswordError" class="text-xs text-red-500 mt-1">{{ newPasswordError }}</p>
             </div>
             <div>
               <label class="block text-sm text-gray-500 mb-1">新しいパスワード（確認）</label>

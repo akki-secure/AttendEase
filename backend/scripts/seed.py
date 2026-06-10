@@ -13,7 +13,7 @@ from app.models.user import User
 
 TEST_USERS = [
     {"employee_id": "EMP001", "name": "山田 太郎", "password": "Password1!", "role": "EMPLOYEE"},
-    {"employee_id": "EMP002", "name": "鈴木 花子", "password": "Password1!", "role": "MANAGER"},
+    {"employee_id": "EMP002", "name": "鈴木 花子", "password": "NewPass456!", "role": "MANAGER"},
     {"employee_id": "ADMIN001", "name": "システム管理者", "password": "Admin1234!", "role": "ADMIN"},
 ]
 

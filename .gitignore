@@ -10,3 +10,6 @@ dist/
 *.db
 *.db-shm
 *.db-wal
+
+# Claude memory files
+.claude/memory/

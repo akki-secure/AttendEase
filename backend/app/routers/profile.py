@@ -3,7 +3,7 @@ from pydantic import BaseModel, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_current_user, get_db
-from app.core.security import get_password_hash, verify_password
+from app.core.security import ASCII_ONLY, get_password_hash, verify_password
 from app.models.user import User
 
 router = APIRouter(prefix="/api/v1/profile", tags=["profile"])
@@ -46,6 +46,11 @@ async def update_profile(
     db: AsyncSession = Depends(get_db),
 ) -> ProfileResponse:
     if payload.name is not None:
+        if not payload.name.strip():
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="氏名は必須です",
+            )
         current_user.name = payload.name
 
     if payload.email is not None:
@@ -66,6 +71,16 @@ async def update_profile(
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="新しいパスワードは8文字以上にしてください",
+            )
+        if payload.new_password.strip() == "":
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="パスワードにスペースのみは使用できません",
+            )
+        if not ASCII_ONLY.match(payload.new_password):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="パスワードは英数字・記号（ASCII）のみ使用できます",
             )
         current_user.hashed_password = get_password_hash(payload.new_password)
 

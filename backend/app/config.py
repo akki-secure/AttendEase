@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     OTP_EXPIRE_MINUTES: int = 10
     OTP_RESEND_INTERVAL_SECONDS: int = 60
 
+    RESET_EXPIRE_MINUTES: int = 10
+    RESET_RESEND_INTERVAL_SECONDS: int = 60
+
     DEV_OTP_BYPASS: bool = False
 
     model_config = {"env_file": ".env"}

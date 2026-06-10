@@ -28,6 +28,20 @@ def _send(to_address: str, subject: str, text: str, html: str) -> None:
         logger.exception("メール送信に失敗しました: %s → %s", subject, to_address)
 
 
+def send_password_reset_email(to_address: str, reset_code: str) -> None:
+    expire_min = settings.RESET_EXPIRE_MINUTES
+    text = f"パスワードリセットコード: {reset_code}\n有効期限: {expire_min}分\n\nこのコードに身に覚えがない場合は無視してください。"
+    html = f"""<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
+  <h2 style="color:#1d4ed8">AttendEase パスワードリセット</h2>
+  <p>以下のコードを入力して新しいパスワードを設定してください。</p>
+  <div style="font-size:2rem;font-weight:bold;letter-spacing:0.3em;padding:16px;background:#f1f5f9;border-radius:8px;text-align:center">
+    {reset_code}
+  </div>
+  <p style="color:#64748b;font-size:0.875rem">有効期限: <strong>{expire_min}分</strong><br>このコードに身に覚えがない場合は無視してください。</p>
+</div>"""
+    _send(to_address, "【AttendEase】パスワードリセットコード", text, html)
+
+
 def send_otp_email(to_address: str, otp_code: str) -> None:
     expire_min = settings.OTP_EXPIRE_MINUTES
     text = f"認証コード: {otp_code}\n有効期限: {expire_min}分\n\nこのコードは第三者に教えないでください。"
