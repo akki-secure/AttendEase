@@ -12,6 +12,7 @@ from app.core.email import send_otp_email, send_password_reset_email
 from app.core.security import create_access_token, dummy_verify, get_password_hash, verify_password
 from app.models.otp import OtpCode
 from app.models.password_reset_token import PasswordResetToken
+from app.models.leave_balance import LeaveBalance
 from app.models.user import User
 from app.schemas.auth import (
     LoginRequest,
@@ -62,6 +63,12 @@ async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_db))
         role="EMPLOYEE",
     )
     db.add(user)
+    await db.flush()
+
+    current_year = datetime.now(timezone.utc).year
+    leave_balance = LeaveBalance(user_id=user.id, year=current_year, granted_days=2, used_days=0)
+    db.add(leave_balance)
+
     await db.commit()
     await db.refresh(user)
 
