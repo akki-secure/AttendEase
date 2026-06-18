@@ -14,7 +14,7 @@ class AttendanceRecord(Base):
     date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
     clock_in: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     clock_out: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    break_minutes: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    break_minutes: Mapped[int] = mapped_column(Integer, nullable=False, default=60)
     # PRESENT / CLOSED / CORRECTION_PENDING / CORRECTION_APPROVED
     status: Mapped[str] = mapped_column(String(30), nullable=False, default="PRESENT")
     work_type: Mapped[str | None] = mapped_column(String(10), nullable=True)  # "office" / "remote"

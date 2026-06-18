@@ -1,6 +1,6 @@
 import csv
 import io
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
@@ -9,14 +9,14 @@ from sqlalchemy import and_, extract, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_db, require_manager_or_admin
+from app.core.time_utils import ensure_utc as _ensure_utc
+from app.core.time_utils import overtime_minutes as _overtime
 from app.models.attendance import AttendanceRecord
 from app.models.leave import LeaveRequest
 from app.models.overtime import OvertimeRequest
 from app.models.user import User
 
 router = APIRouter(prefix="/api/v1/reports", tags=["reports"])
-
-_STANDARD_WORK_MINUTES = 480
 
 _STATUS_LABEL = {
     "PENDING": "申請中",
@@ -33,12 +33,6 @@ _ATTENDANCE_STATUS_LABEL = {
 }
 
 _LEAVE_TYPE_LABEL = {"ANNUAL": "有給休暇", "SPECIAL": "特別休暇"}
-
-
-def _ensure_utc(dt: datetime | None) -> datetime | None:
-    if dt is None:
-        return None
-    return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
 
 
 def _fmt_dt(dt: datetime | None) -> str:
@@ -111,18 +105,23 @@ async def get_monthly_summary(
     for r in att_result.scalars().all():
         att_by_user.setdefault(r.user_id, []).append(r)
 
+    first_day = date(year, mon, 1)
+    last_day = date(year + (mon // 12), mon % 12 + 1, 1) - timedelta(days=1)
     leave_result = await db.execute(
         select(LeaveRequest).where(
             and_(
                 LeaveRequest.status == "APPROVED",
-                extract("year", LeaveRequest.start_date) == year,
-                extract("month", LeaveRequest.start_date) == mon,
+                LeaveRequest.start_date <= last_day,
+                LeaveRequest.end_date >= first_day,
             )
         )
     )
     leave_days_by_user: dict[int, int] = {}
     for lr in leave_result.scalars().all():
-        leave_days_by_user[lr.user_id] = leave_days_by_user.get(lr.user_id, 0) + lr.days
+        overlap_start = max(lr.start_date, first_day)
+        overlap_end = min(lr.end_date, last_day)
+        days_in_month = (overlap_end - overlap_start).days + 1
+        leave_days_by_user[lr.user_id] = leave_days_by_user.get(lr.user_id, 0) + days_in_month
 
     summaries: list[UserMonthlySummary] = []
     for u in users:
@@ -139,7 +138,7 @@ async def get_monthly_summary(
                 if ci and co:
                     w = max(int((co - ci).total_seconds() // 60) - r.break_minutes, 0)
                     total_work += w
-                    total_ot += max(w - _STANDARD_WORK_MINUTES, 0)
+                    total_ot += _overtime(w)
         summaries.append(UserMonthlySummary(
             user_id=u.id,
             employee_id=u.employee_id,
@@ -193,7 +192,7 @@ async def download_attendance_csv(
             co = _ensure_utc(r.clock_out)
             if ci and co:
                 work = max(int((co - ci).total_seconds() // 60) - r.break_minutes, 0)
-                ot = max(work - _STANDARD_WORK_MINUTES, 0)
+                ot = _overtime(work)
         writer.writerow([
             u.employee_id if u else "",
             u.name if u else "",

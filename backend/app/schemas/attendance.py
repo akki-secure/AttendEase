@@ -46,7 +46,7 @@ class FixClockOutRequest(BaseModel):
 class CorrectionRequest(BaseModel):
     clock_in: datetime
     clock_out: datetime
-    break_minutes: int = Field(ge=0, default=0)
+    break_minutes: int = Field(ge=0, default=60)
     note: str = Field(min_length=1, max_length=500)
 
 

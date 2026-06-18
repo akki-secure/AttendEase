@@ -8,6 +8,8 @@ from sqlalchemy import and_, extract, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_current_user, get_db
+from app.core.time_utils import ensure_utc as _ensure_utc
+from app.core.time_utils import overtime_minutes as _overtime
 from app.models.attendance import AttendanceRecord
 from app.models.user import User
 from app.schemas.attendance import (
@@ -25,15 +27,6 @@ from app.schemas.attendance import (
 )
 
 router = APIRouter()
-
-_STANDARD_WORK_MINUTES = 480  # 8 時間
-
-
-def _ensure_utc(dt: datetime | None) -> datetime | None:
-    """Naive datetimes from SQLite are UTC – attach tzinfo so Pydantic serializes with offset."""
-    if dt is None:
-        return None
-    return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
 
 
 def _to_response(record: AttendanceRecord) -> AttendanceResponse:
@@ -108,6 +101,7 @@ async def clock_in(
         date=today,
         clock_in=clock_in_dt,
         work_type=payload.work_type,
+        break_minutes=60,
         status="PRESENT",
     )
     db.add(record)
@@ -126,7 +120,7 @@ async def clock_out(
     clock_out_dt = payload.clock_out if payload.clock_out is not None else now
     if clock_out_dt.tzinfo is None:
         clock_out_dt = clock_out_dt.replace(tzinfo=timezone.utc)
-    today = now.date()
+    today = datetime.now(_JST).date()
 
     record = await _get_today_record(db, current_user.id, today)
     if record is None:
@@ -175,7 +169,7 @@ async def fix_today_clock_in(
     if clock_in_dt.tzinfo is None:
         clock_in_dt = clock_in_dt.replace(tzinfo=timezone.utc)
 
-    if record.clock_out and clock_in_dt >= _ensure_utc(record.clock_out):
+    if record.clock_out and clock_in_dt > _ensure_utc(record.clock_out):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="出勤時刻は退勤時刻より前にしてください",
@@ -224,7 +218,7 @@ async def create_past_record(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> AttendanceResponse:
-    """当月の過去日付の打刻を直接登録する（承認不要）"""
+    """当月・先月の過去日付の打刻を直接登録する（承認不要）"""
     today_jst = datetime.now(_JST).date()
 
     if payload.date >= today_jst:
@@ -234,10 +228,12 @@ async def create_past_record(
         )
 
     first_of_month = today_jst.replace(day=1)
-    if payload.date < first_of_month:
+    # 月初は当月に過去日付が存在しないため、先月初日まで許容する
+    first_of_prev_month = (first_of_month - timedelta(days=1)).replace(day=1)
+    if payload.date < first_of_prev_month:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="当月の日付のみ登録できます",
+            detail="当月または先月の日付のみ登録できます",
         )
 
     clock_in_dt = payload.clock_in
@@ -257,6 +253,12 @@ async def create_past_record(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="退勤時刻は翌日までにしてください",
+        )
+
+    if (clock_out_dt - clock_in_dt).total_seconds() > 86400:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="勤務時間は24時間以内にしてください",
         )
 
     if clock_out_dt <= clock_in_dt:
@@ -312,7 +314,7 @@ async def get_my_monthly(
     for r in responses:
         w = r.work_minutes or 0
         total_work += w
-        total_overtime += max(w - _STANDARD_WORK_MINUTES, 0)
+        total_overtime += _overtime(w)
 
     return MonthlyAttendanceResponse(
         month=month,
@@ -350,7 +352,7 @@ async def get_my_yearly(
             co = _ensure_utc(rec.clock_out)
             if ci and co:
                 work = max(int((co - ci).total_seconds() // 60) - rec.break_minutes, 0)
-                ot = max(work - _STANDARD_WORK_MINUTES, 0)
+                ot = _overtime(work)
                 monthly[key].work_minutes += work
                 monthly[key].overtime_minutes += ot
 
@@ -376,14 +378,22 @@ async def request_correction(
     if record is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="打刻記録が見つかりません")
 
-    if payload.clock_out < payload.clock_in:
+    if record.status not in ("CLOSED", "CORRECTION_APPROVED"):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="修正申請は退勤済みまたは修正承認済みの記録のみ可能です",
+        )
+
+    clock_in_dt = _ensure_utc(payload.clock_in)
+    clock_out_dt = _ensure_utc(payload.clock_out)
+    if clock_out_dt < clock_in_dt:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="退勤時刻は出勤時刻より後にしてください",
         )
 
-    record.clock_in = payload.clock_in
-    record.clock_out = payload.clock_out
+    record.clock_in = clock_in_dt
+    record.clock_out = clock_out_dt
     record.break_minutes = payload.break_minutes
     record.correction_note = payload.note
     record.status = "CORRECTION_PENDING"

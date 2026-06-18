@@ -91,7 +91,7 @@ function printReport() {
   window.print()
 }
 
-await fetchSummary()
+onMounted(fetchSummary)
 
 const { roleTheme } = useRoleTheme()
 </script>
@@ -151,7 +151,7 @@ const { roleTheme } = useRoleTheme()
             icon="i-heroicons-printer"
             class="print:hidden"
             @click="printReport"
-          >印刷 / PDF 保存</UButton>
+          >印刷</UButton>
         </div>
       </div>
 

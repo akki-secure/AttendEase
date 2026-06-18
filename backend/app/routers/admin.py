@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -41,6 +43,15 @@ async def create_user(
         role=payload.role,
     )
     db.add(user)
+    await db.flush()
+
+    initial_balance = LeaveBalance(
+        user_id=user.id,
+        year=datetime.now().year,
+        granted_days=2,
+        used_days=0,
+    )
+    db.add(initial_balance)
     await db.commit()
     await db.refresh(user)
 
