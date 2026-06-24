@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Index, Integer, String, func
+from sqlalchemy import Boolean, DateTime, Index, Integer, String, func, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -13,8 +13,8 @@ class PasswordResetToken(Base):
             "uq_password_reset_tokens_active",
             "employee_id",
             unique=True,
-            sqlite_where="used = 0",
-            postgresql_where="used = false",
+            sqlite_where=text("used = 0"),
+            postgresql_where=text("used = false"),
         ),
     )
 
