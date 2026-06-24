@@ -11,7 +11,7 @@ app = FastAPI(title="AttendEase API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000", "http://13.239.31.224:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
