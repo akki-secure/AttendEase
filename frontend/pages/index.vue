@@ -182,6 +182,7 @@ async function handleClockOut() {
 
 // ── 年次残業グラフ（36協定チェック） ──────────────────────────
 const yearlyData = ref<YearlySummaryResponse | null>(null)
+const yearlyLoadFailed = ref(false)
 const currentYear = new Date().getFullYear()
 const CHART_MAX_MIN = 3600  // スケール上限 60h
 const OT_LIMIT_MONTH = 2700 // 45h（月上限）
@@ -189,7 +190,11 @@ const OT_LIMIT_YEAR  = 21600 // 360h（年上限）
 const MONTH_LABELS = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月']
 
 onMounted(async () => {
-  try { yearlyData.value = await attendanceStore.fetchYearly(currentYear) } catch { /* non-critical */ }
+  try {
+    yearlyData.value = await attendanceStore.fetchYearly(currentYear)
+  } catch {
+    yearlyLoadFailed.value = true
+  }
 })
 
 function barHeight(min: number) { return Math.min((min / CHART_MAX_MIN) * 100, 100) }
@@ -529,6 +534,12 @@ const annualOtPct  = computed(() => Math.min((annualOtMin.value / OT_LIMIT_YEAR)
           </div>
         </div>
 
+        <!-- エラー -->
+        <div v-else-if="yearlyLoadFailed" class="flex flex-col items-center justify-center h-40 gap-2 text-gray-400">
+          <UIcon name="i-heroicons-exclamation-circle" class="w-8 h-8 text-gray-300" />
+          <p class="text-sm">データを取得できませんでした</p>
+          <UButton size="xs" variant="soft" color="gray" @click="yearlyLoadFailed = false; attendanceStore.fetchYearly(currentYear).then(d => yearlyData = d).catch(() => { yearlyLoadFailed = true })">再試行</UButton>
+        </div>
         <!-- ローディング -->
         <div v-else class="flex items-center justify-center h-40">
           <UIcon name="i-heroicons-arrow-path" class="w-6 h-6 text-gray-300 animate-spin" />
