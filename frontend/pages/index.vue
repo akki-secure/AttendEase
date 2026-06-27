@@ -166,8 +166,15 @@ async function handleClockIn() {
     await attendanceStore.clockIn(toIso(clockInTime.value), workType.value)
     const typeLabel = workType.value === "office" ? "出社" : "リモートワーク"
     toast.add({ title: `${clockInTime.value} に出勤打刻しました（${typeLabel}）`, color: "green", icon: "i-heroicons-check-circle" })
-  } catch {
-    toast.add({ title: attendanceStore.error ?? "エラーが発生しました", color: "red", icon: "i-heroicons-exclamation-circle" })
+  } catch (err: unknown) {
+    const e = err as { status?: number }
+    if (e?.status === 409) {
+      // サーバーで打刻済み（低スペックサーバーでの遅延による二重送信）→ 画面を更新して正常状態に戻す
+      await attendanceStore.fetchToday()
+      toast.add({ title: "出勤打刻が完了しています", color: "green", icon: "i-heroicons-check-circle" })
+    } else {
+      toast.add({ title: attendanceStore.error ?? "エラーが発生しました", color: "red", icon: "i-heroicons-exclamation-circle" })
+    }
   }
 }
 
