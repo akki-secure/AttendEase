@@ -1,5 +1,5 @@
 import { defineStore } from "pinia"
-import type { AttendanceRecord, MonthlyAttendanceResponse, TodayStatusResponse, WorkType, YearlySummaryResponse } from "~/types/attendance"
+import type { AttendanceRecord, CorrectionRequest, MonthlyAttendanceResponse, ReviewPayload, TodayStatusResponse, WorkType, YearlySummaryResponse } from "~/types/attendance"
 import { extractApiError } from "~/utils/validation"
 
 export const useAttendanceStore = defineStore("attendance", () => {
@@ -7,6 +7,7 @@ export const useAttendanceStore = defineStore("attendance", () => {
   const authStore = useAuthStore()
 
   const today = ref<TodayStatusResponse | null>(null)
+  const pendingCorrections = ref<CorrectionRequest[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
@@ -166,5 +167,73 @@ export const useAttendanceStore = defineStore("attendance", () => {
     )
   }
 
-  return { today, isLoading, error, fetchToday, clockIn, clockOut, fixClockIn, fixClockOut, requestCorrection, createPastRecord, fetchMonthly, fetchYearly }
+  async function fetchPendingCorrections(): Promise<void> {
+    isLoading.value = true
+    error.value = null
+    try {
+      pendingCorrections.value = await $fetch<CorrectionRequest[]>(
+        `${config.public.apiBase}/api/v1/attendance/corrections/pending`,
+        { headers: authHeaders() },
+      )
+    } catch (err: unknown) {
+      error.value = extractApiError(err, "承認待ち一覧の取得に失敗しました")
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function approveCorrection(id: number, payload: ReviewPayload): Promise<void> {
+    isLoading.value = true
+    error.value = null
+    try {
+      await $fetch(`${config.public.apiBase}/api/v1/attendance/corrections/${id}/approve`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: payload,
+      })
+      await fetchPendingCorrections()
+    } catch (err: unknown) {
+      error.value = extractApiError(err, "承認に失敗しました")
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function rejectCorrection(id: number, payload: ReviewPayload): Promise<void> {
+    isLoading.value = true
+    error.value = null
+    try {
+      await $fetch(`${config.public.apiBase}/api/v1/attendance/corrections/${id}/reject`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: payload,
+      })
+      await fetchPendingCorrections()
+    } catch (err: unknown) {
+      error.value = extractApiError(err, "却下に失敗しました")
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  return {
+    today,
+    pendingCorrections,
+    isLoading,
+    error,
+    fetchToday,
+    clockIn,
+    clockOut,
+    fixClockIn,
+    fixClockOut,
+    requestCorrection,
+    createPastRecord,
+    fetchMonthly,
+    fetchYearly,
+    fetchPendingCorrections,
+    approveCorrection,
+    rejectCorrection,
+  }
 })

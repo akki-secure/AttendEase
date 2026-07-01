@@ -1,3 +1,4 @@
+import asyncio
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
@@ -6,15 +7,20 @@ _JST = ZoneInfo("Asia/Tokyo")
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import and_, extract, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
-from app.core.deps import get_current_user, get_db
+from app.core.deps import get_current_user, get_db, require_manager_or_admin
+from app.core.email import send_correction_request_email, send_correction_reviewed_email
 from app.models.attendance import AttendanceRecord
+from app.models.notification import Notification
 from app.models.user import User
 from app.schemas.attendance import (
     AttendanceResponse,
     ClockInRequest,
     ClockOutRequest,
     CorrectionRequest,
+    CorrectionRequestResponse,
+    CorrectionReviewRequest,
     FixClockInRequest,
     FixClockOutRequest,
     MonthlyAttendanceResponse,
@@ -27,6 +33,14 @@ from app.schemas.attendance import (
 router = APIRouter()
 
 _STANDARD_WORK_MINUTES = 480  # 8 時間
+
+
+def _send_bg(emails: list[tuple]) -> None:
+    for fn, args in emails:
+        try:
+            fn(*args)
+        except Exception:
+            pass
 
 
 def _ensure_utc(dt: datetime | None) -> datetime | None:
@@ -56,7 +70,15 @@ def _to_response(record: AttendanceRecord) -> AttendanceResponse:
         work_type=record.work_type,
         correction_note=record.correction_note,
         work_minutes=work_minutes,
+        reviewer_id=record.reviewer_id,
+        reviewer_comment=record.reviewer_comment,
+        reviewed_at=_ensure_utc(record.reviewed_at),
     )
+
+
+def _to_correction_response(record: AttendanceRecord) -> CorrectionRequestResponse:
+    base = _to_response(record)
+    return CorrectionRequestResponse(user_name=record.user.name, **base.model_dump())
 
 
 async def _get_today_record(
@@ -368,9 +390,9 @@ async def request_correction(
     db: AsyncSession = Depends(get_db),
 ) -> AttendanceResponse:
     result = await db.execute(
-        select(AttendanceRecord).where(
-            and_(AttendanceRecord.id == record_id, AttendanceRecord.user_id == current_user.id)
-        )
+        select(AttendanceRecord)
+        .options(selectinload(AttendanceRecord.user))
+        .where(and_(AttendanceRecord.id == record_id, AttendanceRecord.user_id == current_user.id))
     )
     record = result.scalar_one_or_none()
     if record is None:
@@ -387,11 +409,138 @@ async def request_correction(
         # 退勤時刻が出勤時刻より前 = 日をまたぐ勤務（夜勤）とみなし翌日として扱う
         clock_out = clock_out + timedelta(days=1)
 
+    if record.status != "CORRECTION_PENDING":
+        record.original_clock_in = record.clock_in
+        record.original_clock_out = record.clock_out
+        record.original_break_minutes = record.break_minutes
+
     record.clock_in = clock_in
     record.clock_out = clock_out
     record.break_minutes = payload.break_minutes
     record.correction_note = payload.note
     record.status = "CORRECTION_PENDING"
+    record.reviewer_id = None
+    record.reviewer_comment = None
+    record.reviewed_at = None
     await db.commit()
     await db.refresh(record)
+
+    date_str = record.date.strftime("%Y/%m/%d")
+    message = f"{current_user.name} さんから勤怠修正申請が届きました（{date_str}）"
+    managers_result = await db.execute(
+        select(User).where(User.role.in_(["MANAGER", "ADMIN"]), User.is_active.is_(True))
+    )
+    managers = managers_result.scalars().all()
+    email_tasks = []
+    for m in managers:
+        db.add(Notification(user_id=m.id, type="CORRECTION_REQUEST", message=message))
+        if m.email:
+            email_tasks.append((send_correction_request_email, (m.email, current_user.name, date_str)))
+
+    await db.commit()
+    asyncio.get_event_loop().run_in_executor(None, _send_bg, email_tasks)
+
     return _to_response(record)
+
+
+@router.get("/corrections/pending", response_model=list[CorrectionRequestResponse])
+async def get_pending_corrections(
+    _: User = Depends(require_manager_or_admin),
+    db: AsyncSession = Depends(get_db),
+) -> list[CorrectionRequestResponse]:
+    result = await db.execute(
+        select(AttendanceRecord)
+        .options(selectinload(AttendanceRecord.user))
+        .where(AttendanceRecord.status == "CORRECTION_PENDING")
+        .order_by(AttendanceRecord.updated_at.asc())
+    )
+    records = result.scalars().all()
+    return [_to_correction_response(r) for r in records]
+
+
+@router.post("/corrections/{record_id}/approve", response_model=CorrectionRequestResponse)
+async def approve_correction(
+    record_id: int,
+    payload: CorrectionReviewRequest,
+    current_user: User = Depends(require_manager_or_admin),
+    db: AsyncSession = Depends(get_db),
+) -> CorrectionRequestResponse:
+    result = await db.execute(
+        select(AttendanceRecord)
+        .options(selectinload(AttendanceRecord.user))
+        .where(AttendanceRecord.id == record_id)
+    )
+    record = result.scalar_one_or_none()
+    if record is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="打刻記録が見つかりません")
+    if record.status != "CORRECTION_PENDING":
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="承認待ち以外の申請は操作できません")
+
+    record.status = "CORRECTION_APPROVED"
+    record.reviewer_id = current_user.id
+    record.reviewer_comment = payload.comment
+    record.reviewed_at = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(record)
+
+    date_str = record.date.strftime("%Y/%m/%d")
+    message = f"勤怠修正申請（{date_str}）が承認されました"
+    db.add(Notification(user_id=record.user_id, type="CORRECTION_APPROVED", message=message))
+    await db.commit()
+
+    if record.user.email:
+        asyncio.get_event_loop().run_in_executor(
+            None,
+            _send_bg,
+            [(send_correction_reviewed_email, (record.user.email, record.user.name, "APPROVED", payload.comment, date_str))],
+        )
+
+    return _to_correction_response(record)
+
+
+@router.post("/corrections/{record_id}/reject", response_model=CorrectionRequestResponse)
+async def reject_correction(
+    record_id: int,
+    payload: CorrectionReviewRequest,
+    current_user: User = Depends(require_manager_or_admin),
+    db: AsyncSession = Depends(get_db),
+) -> CorrectionRequestResponse:
+    result = await db.execute(
+        select(AttendanceRecord)
+        .options(selectinload(AttendanceRecord.user))
+        .where(AttendanceRecord.id == record_id)
+    )
+    record = result.scalar_one_or_none()
+    if record is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="打刻記録が見つかりません")
+    if record.status != "CORRECTION_PENDING":
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="承認待ち以外の申請は操作できません")
+
+    record.clock_in = record.original_clock_in
+    record.clock_out = record.original_clock_out
+    record.break_minutes = record.original_break_minutes or 0
+    record.original_clock_in = None
+    record.original_clock_out = None
+    record.original_break_minutes = None
+    record.status = "CLOSED" if record.clock_out else "PRESENT"
+    record.reviewer_id = current_user.id
+    record.reviewer_comment = payload.comment
+    record.reviewed_at = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(record)
+
+    date_str = record.date.strftime("%Y/%m/%d")
+    message = f"勤怠修正申請（{date_str}）が否認されました"
+    if payload.comment:
+        message += f"：{payload.comment}"
+    db.add(Notification(user_id=record.user_id, type="CORRECTION_REJECTED", message=message))
+    await db.commit()
+
+    if record.user.email:
+        asyncio.get_event_loop().run_in_executor(
+            None,
+            _send_bg,
+            [(send_correction_reviewed_email, (record.user.email, record.user.name, "REJECTED", payload.comment, date_str))],
+        )
+
+    return _to_correction_response(record)

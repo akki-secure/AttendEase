@@ -16,6 +16,9 @@ const TYPE_ICON: Record<string, string> = {
   OVERTIME_APPROVED: "i-heroicons-check-circle",
   OVERTIME_REJECTED: "i-heroicons-x-circle",
   OVERTIME_ALERT: "i-heroicons-exclamation-triangle",
+  CORRECTION_REQUEST: "i-heroicons-pencil-square",
+  CORRECTION_APPROVED: "i-heroicons-check-circle",
+  CORRECTION_REJECTED: "i-heroicons-x-circle",
 }
 
 const TYPE_COLOR: Record<string, string> = {
@@ -26,6 +29,9 @@ const TYPE_COLOR: Record<string, string> = {
   OVERTIME_APPROVED: "text-green-500",
   OVERTIME_REJECTED: "text-red-500",
   OVERTIME_ALERT: "text-amber-500",
+  CORRECTION_REQUEST: "text-orange-500",
+  CORRECTION_APPROVED: "text-green-500",
+  CORRECTION_REJECTED: "text-red-500",
 }
 
 function fmtDate(iso: string) {

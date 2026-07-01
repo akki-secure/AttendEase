@@ -639,6 +639,9 @@ const annualOtPct  = computed(() => Math.min((annualOtMin.value / OT_LIMIT_YEAR)
           <UButton color="orange" variant="soft" icon="i-heroicons-clock" to="/overtime/approve">
             残業承認
           </UButton>
+          <UButton color="orange" variant="soft" icon="i-heroicons-pencil-square" to="/attendance/approve">
+            勤怠修正承認
+          </UButton>
           <UButton color="indigo" variant="soft" icon="i-heroicons-chart-bar" to="/reports">
             勤怠レポート
           </UButton>

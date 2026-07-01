@@ -19,6 +19,12 @@ class AttendanceRecord(Base):
     status: Mapped[str] = mapped_column(String(30), nullable=False, default="PRESENT")
     work_type: Mapped[str | None] = mapped_column(String(10), nullable=True)  # "office" / "remote"
     correction_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    original_clock_in: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    original_clock_out: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    original_break_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    reviewer_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
+    reviewer_comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, server_default=func.now(), onupdate=func.now()

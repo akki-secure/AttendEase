@@ -15,8 +15,19 @@ class AttendanceResponse(BaseModel):
     work_type: Optional[str] = None
     correction_note: str | None
     work_minutes: int | None  # clock_out - clock_in - break_minutes（退勤後のみ）
+    reviewer_id: int | None = None
+    reviewer_comment: str | None = None
+    reviewed_at: datetime | None = None
 
     model_config = {"from_attributes": True}
+
+
+class CorrectionRequestResponse(AttendanceResponse):
+    user_name: str
+
+
+class CorrectionReviewRequest(BaseModel):
+    comment: str | None = Field(default=None, max_length=500)
 
 
 class TodayStatusResponse(BaseModel):

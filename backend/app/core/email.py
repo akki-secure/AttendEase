@@ -119,6 +119,35 @@ def send_overtime_reviewed_email(to_address: str, applicant_name: str, status: s
     _send(to_address, subject, text, html)
 
 
+def send_correction_request_email(to_address: str, applicant_name: str, date: str) -> None:
+    subject = "【AttendEase】勤怠修正申請が届きました"
+    text = f"{applicant_name} さんから勤怠修正申請が届きました。\n日付: {date}\n\nAttendEaseにログインして承認してください。"
+    html = f"""<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
+  <h2 style="color:#1d4ed8">AttendEase 勤怠修正申請通知</h2>
+  <p><strong>{applicant_name}</strong> さんから勤怠修正申請が届きました。</p>
+  <table style="border-collapse:collapse;width:100%">
+    <tr><td style="padding:6px;color:#64748b">日付</td><td style="padding:6px">{date}</td></tr>
+  </table>
+  <p>AttendEaseにログインして承認・否認してください。</p>
+</div>"""
+    _send(to_address, subject, text, html)
+
+
+def send_correction_reviewed_email(to_address: str, applicant_name: str, status: str, comment: str | None, date: str) -> None:
+    status_ja = "承認" if status == "APPROVED" else "否認"
+    subject = f"【AttendEase】勤怠修正申請が{status_ja}されました"
+    comment_text = f"\nコメント: {comment}" if comment else ""
+    text = f"{applicant_name} さん\n\n勤怠修正申請（{date}）が{status_ja}されました。{comment_text}"
+    color = "#16a34a" if status == "APPROVED" else "#dc2626"
+    html = f"""<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
+  <h2 style="color:{color}">AttendEase 勤怠修正申請{status_ja}</h2>
+  <p>{applicant_name} さん</p>
+  <p>勤怠修正申請（{date}）が<strong>{status_ja}</strong>されました。</p>
+  {"<p style='color:#64748b'>コメント: " + comment + "</p>" if comment else ""}
+</div>"""
+    _send(to_address, subject, text, html)
+
+
 def send_overtime_alert_email(to_address: str, user_name: str, year: int, month: int, total_minutes: int) -> None:
     total_h = round(total_minutes / 60, 1)
     subject = f"【AttendEase】残業時間アラート（{year}年{month}月）"

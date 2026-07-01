@@ -18,6 +18,17 @@ export interface AttendanceRecord {
   work_type: WorkType | null
   correction_note: string | null
   work_minutes: number | null
+  reviewer_id: number | null
+  reviewer_comment: string | null
+  reviewed_at: string | null
+}
+
+export interface CorrectionRequest extends AttendanceRecord {
+  user_name: string
+}
+
+export interface ReviewPayload {
+  comment?: string
 }
 
 export interface TodayStatusResponse {
