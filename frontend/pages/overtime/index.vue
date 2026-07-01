@@ -33,8 +33,10 @@ const computedMinutes = computed(() => {
   if (!form.value.start_time_input || !form.value.end_time_input || !form.value.date) return 0
   const start = new Date(`${form.value.date}T${form.value.start_time_input}:00`)
   const end = new Date(`${form.value.date}T${form.value.end_time_input}:00`)
-  const diff = end.getTime() - start.getTime()
-  if (diff <= 0) return 0
+  let diff = end.getTime() - start.getTime()
+  if (diff === 0) return 0
+  // 終了時刻が開始時刻より前 = 日をまたぐ残業（夜勤）とみなし翌日として計算
+  if (diff < 0) diff += 24 * 60 * 60 * 1000
   return Math.floor(diff / 60000)
 })
 

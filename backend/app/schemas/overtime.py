@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -11,8 +11,11 @@ class OvertimeCreateRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_times(self) -> "OvertimeCreateRequest":
-        if self.end_time <= self.start_time:
+        if self.end_time == self.start_time:
             raise ValueError("終了時刻は開始時刻より後にしてください")
+        if self.end_time < self.start_time:
+            # 終了時刻が開始時刻より前 = 日をまたぐ残業（夜勤）とみなし翌日として扱う
+            self.end_time = self.end_time + timedelta(days=1)
         return self
 
 
