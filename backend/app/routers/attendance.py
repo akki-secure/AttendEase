@@ -376,14 +376,19 @@ async def request_correction(
     if record is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="打刻記録が見つかりません")
 
-    if payload.clock_out < payload.clock_in:
+    clock_in = payload.clock_in
+    clock_out = payload.clock_out
+    if clock_out == clock_in:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="退勤時刻は出勤時刻より後にしてください",
         )
+    if clock_out < clock_in:
+        # 退勤時刻が出勤時刻より前 = 日をまたぐ勤務（夜勤）とみなし翌日として扱う
+        clock_out = clock_out + timedelta(days=1)
 
-    record.clock_in = payload.clock_in
-    record.clock_out = payload.clock_out
+    record.clock_in = clock_in
+    record.clock_out = clock_out
     record.break_minutes = payload.break_minutes
     record.correction_note = payload.note
     record.status = "CORRECTION_PENDING"
