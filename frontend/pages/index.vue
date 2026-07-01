@@ -141,7 +141,8 @@ async function handleCorrection() {
   const rec = attendanceStore.today?.record
   if (!rec) return
   try {
-    await attendanceStore.requestCorrection(rec.id, toIso(editClockIn.value), toIso(editClockOut.value), correctionNote.value)
+    const clockInIso = toIso(editClockIn.value)
+    await attendanceStore.requestCorrection(rec.id, clockInIso, toIsoClockOut(editClockOut.value, clockInIso), correctionNote.value)
     toast.add({ title: "修正申請を送信しました", color: "blue", icon: "i-heroicons-check-circle" })
     isEditing.value = false
   } catch {

@@ -201,6 +201,15 @@ function toIsoJst(dateStr: string, timeStr: string): string {
   return new Date(`${dateStr}T${timeStr}:00+09:00`).toISOString()
 }
 
+// 退勤時刻が出勤時刻より前 = 日をまたぐ勤務（夜勤）とみなし翌日として扱う
+function toIsoJstClockOut(dateStr: string, timeStr: string, clockInIso: string): string {
+  const d = new Date(`${dateStr}T${timeStr}:00+09:00`)
+  if (d.getTime() < new Date(clockInIso).getTime()) {
+    d.setDate(d.getDate() + 1)
+  }
+  return d.toISOString()
+}
+
 async function submitPastRecord() {
   modalError.value = null
   if (!modalClockIn.value || !modalClockOut.value) {
@@ -209,10 +218,11 @@ async function submitPastRecord() {
   }
   modalLoading.value = true
   try {
+    const clockInIso = toIsoJst(modalDate.value, modalClockIn.value)
     await attendanceStore.createPastRecord(
       modalDate.value,
-      toIsoJst(modalDate.value, modalClockIn.value),
-      toIsoJst(modalDate.value, modalClockOut.value),
+      clockInIso,
+      toIsoJstClockOut(modalDate.value, modalClockOut.value, clockInIso),
       modalWorkType.value ? (modalWorkType.value as WorkType) : null,
       modalBreak.value,
     )
