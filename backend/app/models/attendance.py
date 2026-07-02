@@ -22,6 +22,7 @@ class AttendanceRecord(Base):
     original_clock_in: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     original_clock_out: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     original_break_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    original_status: Mapped[str | None] = mapped_column(String(30), nullable=True)
     reviewer_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
     reviewer_comment: Mapped[str | None] = mapped_column(Text, nullable=True)
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
@@ -30,4 +31,4 @@ class AttendanceRecord(Base):
         DateTime, nullable=False, server_default=func.now(), onupdate=func.now()
     )
 
-    user = relationship("User", back_populates="attendance_records")
+    user = relationship("User", back_populates="attendance_records", foreign_keys=[user_id])

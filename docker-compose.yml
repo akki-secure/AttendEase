@@ -18,7 +18,7 @@ services:
       - /app/node_modules
       - /app/.nuxt
     environment:
-      NUXT_PUBLIC_API_BASE: http://localhost:8000
+      NUXT_PUBLIC_API_BASE: http://13.239.31.224:8000
     depends_on:
       - backend
 
