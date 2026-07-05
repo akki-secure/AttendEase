@@ -508,15 +508,25 @@ cp .env.example .env
 docker compose up --build -d
 ```
 
-**4. データベースの初期化**
+> [!NOTE]
+> DBマイグレーション(`alembic upgrade head`)はbackendコンテナ起動時に自動実行されます。手動で実行する必要はありません。
+
+**4. テストユーザーの投入**
 
 ```bash
-# テーブル作成
-docker compose exec backend alembic upgrade head
-
-# テストユーザーの投入
 docker compose exec backend python -m scripts.seed
 ```
+
+**5. （IDEで型補完・型チェックを効かせる場合）frontendの依存関係をホスト側にもインストール**
+
+`frontend/node_modules` と `frontend/.nuxt` は `docker-compose.yml` でコンテナ内の匿名ボリュームとして扱われるため、`npm install` をコンテナ内で実行してもホスト側（VSCode等のIDEが参照する場所）には反映されません。IDEで `process is not defined` 等の型エラーが表示される場合は、以下をホスト側で実行してください。
+
+```bash
+cd frontend
+npm install
+```
+
+依存関係やNuxtのバージョンを更新した際は、このコマンドをホスト側でも再実行する必要があります。
 
 **5. ブラウザでアクセス**
 
