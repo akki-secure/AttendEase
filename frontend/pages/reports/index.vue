@@ -20,7 +20,7 @@ interface MonthlySummaryResponse {
   total_overtime_minutes: number
 }
 
-const config = useRuntimeConfig()
+const apiBase = useApiBase()
 const authStore = useAuthStore()
 
 function currentMonthStr() {
@@ -43,7 +43,7 @@ async function fetchSummary() {
   error.value = null
   try {
     summary.value = await $fetch<MonthlySummaryResponse>(
-      `${config.public.apiBase}/api/v1/reports/summary?month=${selectedMonth.value}`,
+      `${apiBase}/api/v1/reports/summary?month=${selectedMonth.value}`,
       { headers: authHeaders() },
     )
   } catch {
@@ -57,7 +57,7 @@ async function downloadCsv(type: "attendance" | "leaves" | "overtime") {
   downloadingCsv.value = type
   try {
     const res = await fetch(
-      `${config.public.apiBase}/api/v1/reports/${type}/csv?month=${selectedMonth.value}`,
+      `${apiBase}/api/v1/reports/${type}/csv?month=${selectedMonth.value}`,
       { headers: authHeaders() },
     )
     if (!res.ok) throw new Error("Download failed")

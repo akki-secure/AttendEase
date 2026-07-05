@@ -3,7 +3,7 @@ import type { AttendanceRecord, CorrectionRequest, MonthlyAttendanceResponse, Re
 import { extractApiError } from "~/utils/validation"
 
 export const useAttendanceStore = defineStore("attendance", () => {
-  const config = useRuntimeConfig()
+  const apiBase = useApiBase()
   const authStore = useAuthStore()
 
   const today = ref<TodayStatusResponse | null>(null)
@@ -20,7 +20,7 @@ export const useAttendanceStore = defineStore("attendance", () => {
     error.value = null
     try {
       today.value = await $fetch<TodayStatusResponse>(
-        `${config.public.apiBase}/api/v1/attendance/today`,
+        `${apiBase}/api/v1/attendance/today`,
         { headers: authHeaders() },
       )
     } catch (err: unknown) {
@@ -38,7 +38,7 @@ export const useAttendanceStore = defineStore("attendance", () => {
       if (clockInIso) body.clock_in = clockInIso
       if (workType) body.work_type = workType
       const record = await $fetch<AttendanceRecord>(
-        `${config.public.apiBase}/api/v1/attendance/clock-in`,
+        `${apiBase}/api/v1/attendance/clock-in`,
         { method: "POST", headers: authHeaders(), body },
       )
       await fetchToday()
@@ -57,7 +57,7 @@ export const useAttendanceStore = defineStore("attendance", () => {
     try {
       const body = clockOutIso ? { clock_out: clockOutIso } : {}
       const record = await $fetch<AttendanceRecord>(
-        `${config.public.apiBase}/api/v1/attendance/clock-out`,
+        `${apiBase}/api/v1/attendance/clock-out`,
         { method: "POST", headers: authHeaders(), body },
       )
       await fetchToday()
@@ -77,7 +77,7 @@ export const useAttendanceStore = defineStore("attendance", () => {
       const body: Record<string, unknown> = { clock_in: clockInIso }
       if (workType != null) body.work_type = workType
       const record = await $fetch<AttendanceRecord>(
-        `${config.public.apiBase}/api/v1/attendance/today/clock-in`,
+        `${apiBase}/api/v1/attendance/today/clock-in`,
         { method: "PATCH", headers: authHeaders(), body },
       )
       await fetchToday()
@@ -95,7 +95,7 @@ export const useAttendanceStore = defineStore("attendance", () => {
     error.value = null
     try {
       const record = await $fetch<AttendanceRecord>(
-        `${config.public.apiBase}/api/v1/attendance/today/clock-out`,
+        `${apiBase}/api/v1/attendance/today/clock-out`,
         { method: "PATCH", headers: authHeaders(), body: { clock_out: clockOutIso } },
       )
       await fetchToday()
@@ -119,7 +119,7 @@ export const useAttendanceStore = defineStore("attendance", () => {
     error.value = null
     try {
       const record = await $fetch<AttendanceRecord>(
-        `${config.public.apiBase}/api/v1/attendance/${recordId}/correction-request`,
+        `${apiBase}/api/v1/attendance/${recordId}/correction-request`,
         {
           method: "PATCH",
           headers: authHeaders(),
@@ -144,7 +144,7 @@ export const useAttendanceStore = defineStore("attendance", () => {
     breakMinutes: number,
   ): Promise<AttendanceRecord> {
     return $fetch<AttendanceRecord>(
-      `${config.public.apiBase}/api/v1/attendance/record`,
+      `${apiBase}/api/v1/attendance/record`,
       {
         method: "POST",
         headers: authHeaders(),
@@ -155,14 +155,14 @@ export const useAttendanceStore = defineStore("attendance", () => {
 
   async function fetchMonthly(month: string): Promise<MonthlyAttendanceResponse> {
     return $fetch<MonthlyAttendanceResponse>(
-      `${config.public.apiBase}/api/v1/attendance/me`,
+      `${apiBase}/api/v1/attendance/me`,
       { params: { month }, headers: authHeaders() },
     )
   }
 
   async function fetchYearly(year: number): Promise<YearlySummaryResponse> {
     return $fetch<YearlySummaryResponse>(
-      `${config.public.apiBase}/api/v1/attendance/me/yearly`,
+      `${apiBase}/api/v1/attendance/me/yearly`,
       { params: { year }, headers: authHeaders() },
     )
   }
@@ -172,7 +172,7 @@ export const useAttendanceStore = defineStore("attendance", () => {
     error.value = null
     try {
       pendingCorrections.value = await $fetch<CorrectionRequest[]>(
-        `${config.public.apiBase}/api/v1/attendance/corrections/pending`,
+        `${apiBase}/api/v1/attendance/corrections/pending`,
         { headers: authHeaders() },
       )
     } catch (err: unknown) {
@@ -186,7 +186,7 @@ export const useAttendanceStore = defineStore("attendance", () => {
     isLoading.value = true
     error.value = null
     try {
-      await $fetch(`${config.public.apiBase}/api/v1/attendance/corrections/${id}/approve`, {
+      await $fetch(`${apiBase}/api/v1/attendance/corrections/${id}/approve`, {
         method: "POST",
         headers: authHeaders(),
         body: payload,
@@ -204,7 +204,7 @@ export const useAttendanceStore = defineStore("attendance", () => {
     isLoading.value = true
     error.value = null
     try {
-      await $fetch(`${config.public.apiBase}/api/v1/attendance/corrections/${id}/reject`, {
+      await $fetch(`${apiBase}/api/v1/attendance/corrections/${id}/reject`, {
         method: "POST",
         headers: authHeaders(),
         body: payload,

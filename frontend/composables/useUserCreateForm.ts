@@ -18,7 +18,7 @@ const userCreateSchema = toTypedSchema(
 )
 
 export function useUserCreateForm() {
-  const config = useRuntimeConfig()
+  const apiBase = useApiBase()
   const authStore = useAuthStore()
 
   const apiError = ref<string | null>(null)
@@ -40,7 +40,7 @@ export function useUserCreateForm() {
     successMessage.value = null
 
     try {
-      const data = await $fetch<UserResponse>(`${config.public.apiBase}/api/v1/admin/users`, {
+      const data = await $fetch<UserResponse>(`${apiBase}/api/v1/admin/users`, {
         method: "POST",
         headers: { Authorization: `Bearer ${authStore.token}` },
         body: values as UserCreateRequest,

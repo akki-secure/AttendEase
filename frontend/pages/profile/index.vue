@@ -2,7 +2,7 @@
 import { ASCII_ONLY, extractApiError } from "~/utils/validation"
 
 const authStore = useAuthStore()
-const config = useRuntimeConfig()
+const apiBase = useApiBase()
 const toast = useToast()
 
 if (!authStore.isLoggedIn) {
@@ -35,7 +35,7 @@ const showConfirmPassword = ref(false)
 async function fetchProfile() {
   isLoading.value = true
   try {
-    const data = await $fetch<ProfileResponse>(`${config.public.apiBase}/api/v1/profile/me`, {
+    const data = await $fetch<ProfileResponse>(`${apiBase}/api/v1/profile/me`, {
       headers: { Authorization: `Bearer ${authStore.token}` },
     })
     profile.value = data
@@ -83,7 +83,7 @@ async function saveProfile() {
       body.current_password = currentPassword.value
       body.new_password = newPassword.value
     }
-    const data = await $fetch<ProfileResponse>(`${config.public.apiBase}/api/v1/profile/me`, {
+    const data = await $fetch<ProfileResponse>(`${apiBase}/api/v1/profile/me`, {
       method: "PATCH",
       headers: { Authorization: `Bearer ${authStore.token}` },
       body,

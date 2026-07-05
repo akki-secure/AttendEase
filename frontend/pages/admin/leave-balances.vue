@@ -3,7 +3,7 @@ import type { LeaveBalance } from "~/types/leave"
 
 definePageMeta({ middleware: "admin" })
 
-const config = useRuntimeConfig()
+const apiBase = useApiBase()
 const authStore = useAuthStore()
 
 const currentYear = ref(new Date().getFullYear())
@@ -27,7 +27,7 @@ async function fetchBalances() {
   error.value = null
   try {
     balances.value = await $fetch<LeaveBalance[]>(
-      `${config.public.apiBase}/api/v1/admin/leave-balances`,
+      `${apiBase}/api/v1/admin/leave-balances`,
       { headers: { Authorization: `Bearer ${authStore.token}` }, params: { year: currentYear.value } },
     )
   } catch (err: unknown) {
@@ -57,7 +57,7 @@ async function saveEdit(b: LeaveBalance) {
   saveError.value = null
   try {
     await $fetch(
-      `${config.public.apiBase}/api/v1/admin/leave-balances/${b.user_id}/${currentYear.value}`,
+      `${apiBase}/api/v1/admin/leave-balances/${b.user_id}/${currentYear.value}`,
       {
         method: "PUT",
         headers: { Authorization: `Bearer ${authStore.token}` },

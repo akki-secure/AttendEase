@@ -7,7 +7,10 @@ services:
       - ./backend:/app
       - sqlite_data:/app/data
     env_file: .env
-    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    # 本番(EC2)では .env で UVICORN_RELOAD_FLAG= (空) にして --reload を無効化する。
+    # --reload はファイル監視のオーバーヘッドがあり、t2.microのような非力なインスタンスでは
+    # 断続的な接続エラーの一因になりうるため、本番では外すこと。
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 ${UVICORN_RELOAD_FLAG---reload}"
 
   frontend:
     build: ./frontend
@@ -18,7 +21,10 @@ services:
       - /app/node_modules
       - /app/.nuxt
     environment:
-      NUXT_PUBLIC_API_BASE: http://13.239.31.224:8000
+      NUXT_PUBLIC_API_BASE: ${NUXT_PUBLIC_API_BASE:-http://localhost:8000}
+      NUXT_API_BASE_SERVER: ${NUXT_API_BASE_SERVER:-http://backend:8000}
+      # EC2では .env で NUXT_SSR=false にしてhairpin NAT問題を回避する（PR #11参照）
+      NUXT_SSR: ${NUXT_SSR:-true}
     depends_on:
       - backend
 

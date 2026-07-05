@@ -29,7 +29,7 @@ const confirmSchema = toTypedSchema(
 )
 
 export function usePasswordResetForm() {
-  const config = useRuntimeConfig()
+  const apiBase = useApiBase()
   const step = ref<"request" | "confirm" | "done">("request")
   const storedEmployeeId = ref("")
   const emailHint = ref("")
@@ -63,7 +63,7 @@ export function usePasswordResetForm() {
     apiError.value = null
     try {
       const data = await $fetch<{ ok: boolean; email_hint: string }>(
-        `${config.public.apiBase}/api/v1/auth/password-reset/request`,
+        `${apiBase}/api/v1/auth/password-reset/request`,
         { method: "POST", body: { employee_id: values.employee_id } }
       )
       storedEmployeeId.value = values.employee_id
@@ -79,7 +79,7 @@ export function usePasswordResetForm() {
   const onSubmitConfirm = confirmForm.handleSubmit(async (values) => {
     apiError.value = null
     try {
-      await $fetch(`${config.public.apiBase}/api/v1/auth/password-reset/confirm`, {
+      await $fetch(`${apiBase}/api/v1/auth/password-reset/confirm`, {
         method: "POST",
         body: {
           employee_id: storedEmployeeId.value,
@@ -100,7 +100,7 @@ export function usePasswordResetForm() {
     apiError.value = null
     try {
       const data = await $fetch<{ ok: boolean; email_hint: string }>(
-        `${config.public.apiBase}/api/v1/auth/password-reset/request`,
+        `${apiBase}/api/v1/auth/password-reset/request`,
         { method: "POST", body: { employee_id: storedEmployeeId.value } }
       )
       emailHint.value = data.email_hint

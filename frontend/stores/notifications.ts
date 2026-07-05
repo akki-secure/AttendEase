@@ -57,14 +57,16 @@ async function playNotificationSound() {
 }
 
 export const useNotificationsStore = defineStore("notifications", () => {
-  const config = useRuntimeConfig()
+  const apiBase = useApiBase()
   const authStore = useAuthStore()
+  const toast = useToast()
 
   const notifications = ref<Notification[]>([])
   const unreadCount = ref(0)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
   let pollTimer: ReturnType<typeof setInterval> | null = null
+  const toastedIds = new Set<number>()
 
   function authHeaders() {
     return { Authorization: `Bearer ${authStore.token}` }
@@ -74,12 +76,14 @@ export const useNotificationsStore = defineStore("notifications", () => {
     isLoading.value = true
     error.value = null
     try {
-      const data = await $fetch<Notification[]>(`${config.public.apiBase}/api/v1/notifications/me`, {
+      const data = await $fetch<Notification[]>(`${apiBase}/api/v1/notifications/me`, {
         headers: authHeaders(),
       })
       notifications.value = data
     } catch (err) {
-      error.value = extractApiError(err, "通知の取得に失敗しました")
+      if (!authStore.handleUnauthorized(err)) {
+        error.value = extractApiError(err, "通知の取得に失敗しました")
+      }
     } finally {
       isLoading.value = false
     }
@@ -87,30 +91,35 @@ export const useNotificationsStore = defineStore("notifications", () => {
 
   async function fetchUnreadCount() {
     try {
-      const data = await $fetch<UnreadCountResponse>(`${config.public.apiBase}/api/v1/notifications/unread-count`, {
+      const data = await $fetch<UnreadCountResponse>(`${apiBase}/api/v1/notifications/unread-count`, {
         headers: authHeaders(),
       })
       unreadCount.value = data.count
-    } catch {
-      // non-critical
+    } catch (err) {
+      authStore.handleUnauthorized(err)
     }
   }
 
   async function pollUnreadCount() {
     if (!authStore.token) return
     try {
-      const data = await $fetch<UnreadCountResponse>(`${config.public.apiBase}/api/v1/notifications/unread-count`, {
+      const data = await $fetch<UnreadCountResponse>(`${apiBase}/api/v1/notifications/unread-count`, {
         headers: authHeaders(),
       })
       if (data.count > unreadCount.value) {
         await playNotificationSound()
-        if (notifications.value.length > 0 || unreadCount.value > 0) {
-          await fetchNotifications()
+        await fetchNotifications()
+        const newOnes = notifications.value.filter((n) => !n.is_read && !toastedIds.has(n.id))
+        for (const n of newOnes) {
+          toastedIds.add(n.id)
+          toast.add({ title: n.message, color: "blue", icon: "i-heroicons-bell" })
         }
       }
       unreadCount.value = data.count
-    } catch {
-      // non-critical
+    } catch (err) {
+      if (authStore.handleUnauthorized(err)) {
+        stopPolling()
+      }
     }
   }
 
@@ -128,7 +137,7 @@ export const useNotificationsStore = defineStore("notifications", () => {
 
   async function markAsRead(id: number) {
     try {
-      await $fetch<Notification>(`${config.public.apiBase}/api/v1/notifications/${id}/read`, {
+      await $fetch<Notification>(`${apiBase}/api/v1/notifications/${id}/read`, {
         method: "PATCH",
         headers: authHeaders(),
       })
@@ -144,7 +153,7 @@ export const useNotificationsStore = defineStore("notifications", () => {
 
   async function markAllAsRead() {
     try {
-      await $fetch(`${config.public.apiBase}/api/v1/notifications/read-all`, {
+      await $fetch(`${apiBase}/api/v1/notifications/read-all`, {
         method: "PATCH",
         headers: authHeaders(),
       })

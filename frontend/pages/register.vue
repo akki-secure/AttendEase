@@ -3,7 +3,7 @@ definePageMeta({
   layout: "auth",
 })
 
-const config = useRuntimeConfig()
+const apiBase = useApiBase()
 const router = useRouter()
 
 const employeeId = ref("")
@@ -53,7 +53,7 @@ async function onSubmit() {
   if (!validate()) return
   isSubmitting.value = true
   try {
-    await $fetch(`${config.public.apiBase}/api/v1/auth/register`, {
+    await $fetch(`${apiBase}/api/v1/auth/register`, {
       method: "POST",
       body: {
         employee_id: employeeId.value,
