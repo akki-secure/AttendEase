@@ -3,8 +3,6 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.database import Base, engine
-from app.models import attendance, leave, leave_balance, overtime, user  # noqa: F401 — ensure models are registered before create_all
 from app.routers import admin, attendance as attendance_router, auth, leaves, notifications as notifications_router, overtime as overtime_router, profile as profile_router, reports as reports_router
 
 app = FastAPI(title="AttendEase API", version="1.0.0")
@@ -37,5 +35,3 @@ app.include_router(profile_router.router)
 @app.on_event("startup")
 async def startup() -> None:
     os.makedirs("data", exist_ok=True)
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
