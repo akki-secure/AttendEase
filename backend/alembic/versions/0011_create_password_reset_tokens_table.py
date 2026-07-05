@@ -33,8 +33,8 @@ def upgrade() -> None:
         "password_reset_tokens",
         ["employee_id"],
         unique=True,
-        postgresql_where="used = false",
-        sqlite_where="used = 0",
+        postgresql_where=sa.text("used = false"),
+        sqlite_where=sa.text("used = 0"),
     )
 
 
