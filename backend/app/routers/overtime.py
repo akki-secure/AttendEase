@@ -6,6 +6,7 @@ from sqlalchemy import and_, extract, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.background import send_emails_background
 from app.core.deps import get_current_user, get_db, require_manager_or_admin
 from app.core.email import (
     send_overtime_alert_email,
@@ -57,14 +58,6 @@ async def _get_monthly_approved_minutes(
         )
     )
     return result.scalar_one_or_none() or 0
-
-
-def _send_bg(emails: list[tuple]) -> None:
-    for fn, args in emails:
-        try:
-            fn(*args)
-        except Exception:
-            pass
 
 
 @router.post("", response_model=OvertimeRequestResponse, status_code=status.HTTP_201_CREATED)
@@ -135,7 +128,7 @@ async def create_overtime(
 
     await db.commit()
 
-    asyncio.get_event_loop().run_in_executor(None, _send_bg, email_tasks)
+    asyncio.get_event_loop().run_in_executor(None, send_emails_background, email_tasks)
 
     return _to_response(record)
 
@@ -287,7 +280,7 @@ async def approve_overtime(
     )
     record = result2.scalar_one()
 
-    asyncio.get_event_loop().run_in_executor(None, _send_bg, email_tasks)
+    asyncio.get_event_loop().run_in_executor(None, send_emails_background, email_tasks)
 
     return _to_response(record)
 
@@ -336,7 +329,7 @@ async def reject_overtime(
     if record.user.email:
         asyncio.get_event_loop().run_in_executor(
             None,
-            _send_bg,
+            send_emails_background,
             [(send_overtime_reviewed_email, (record.user.email, record.user.name, "REJECTED", payload.comment, date_str))],
         )
 

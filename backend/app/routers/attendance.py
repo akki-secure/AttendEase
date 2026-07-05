@@ -9,6 +9,7 @@ from sqlalchemy import and_, extract, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.background import send_emails_background
 from app.core.deps import get_current_user, get_db, require_manager_or_admin
 from app.core.email import send_correction_request_email, send_correction_reviewed_email
 from app.models.attendance import AttendanceRecord
@@ -33,14 +34,6 @@ from app.schemas.attendance import (
 router = APIRouter()
 
 _STANDARD_WORK_MINUTES = 480  # 8 時間
-
-
-def _send_bg(emails: list[tuple]) -> None:
-    for fn, args in emails:
-        try:
-            fn(*args)
-        except Exception:
-            pass
 
 
 def _ensure_utc(dt: datetime | None) -> datetime | None:
@@ -413,6 +406,7 @@ async def request_correction(
         record.original_clock_in = record.clock_in
         record.original_clock_out = record.clock_out
         record.original_break_minutes = record.break_minutes
+        record.original_status = record.status
 
     record.clock_in = clock_in
     record.clock_out = clock_out
@@ -438,7 +432,7 @@ async def request_correction(
             email_tasks.append((send_correction_request_email, (m.email, current_user.name, date_str)))
 
     await db.commit()
-    asyncio.get_event_loop().run_in_executor(None, _send_bg, email_tasks)
+    asyncio.get_event_loop().run_in_executor(None, send_emails_background, email_tasks)
 
     return _to_response(record)
 
@@ -491,7 +485,7 @@ async def approve_correction(
     if record.user.email:
         asyncio.get_event_loop().run_in_executor(
             None,
-            _send_bg,
+            send_emails_background,
             [(send_correction_reviewed_email, (record.user.email, record.user.name, "APPROVED", payload.comment, date_str))],
         )
 
@@ -519,10 +513,11 @@ async def reject_correction(
     record.clock_in = record.original_clock_in
     record.clock_out = record.original_clock_out
     record.break_minutes = record.original_break_minutes or 0
+    record.status = record.original_status or ("CLOSED" if record.clock_out else "PRESENT")
     record.original_clock_in = None
     record.original_clock_out = None
     record.original_break_minutes = None
-    record.status = "CLOSED" if record.clock_out else "PRESENT"
+    record.original_status = None
     record.reviewer_id = current_user.id
     record.reviewer_comment = payload.comment
     record.reviewed_at = datetime.now(timezone.utc)
@@ -539,7 +534,7 @@ async def reject_correction(
     if record.user.email:
         asyncio.get_event_loop().run_in_executor(
             None,
-            _send_bg,
+            send_emails_background,
             [(send_correction_reviewed_email, (record.user.email, record.user.name, "REJECTED", payload.comment, date_str))],
         )
 
