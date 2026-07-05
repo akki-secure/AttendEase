@@ -3,7 +3,7 @@ import type { AuthUser, LoginRequest, PreCheckResponse, TokenResponse } from "~/
 import { extractApiError } from "~/utils/validation"
 
 export const useAuthStore = defineStore("auth", () => {
-  const config = useRuntimeConfig()
+  const apiBase = useApiBase()
   const token = useCookie<string | null>("auth_token", { maxAge: 60 * 60 * 8, default: () => null })
   const user = ref<AuthUser | null>(null)
   const isLoading = ref(false)
@@ -16,13 +16,38 @@ export const useAuthStore = defineStore("auth", () => {
     return { id: decoded.user_id, employee_id: decoded.sub, name: decoded.name, role: decoded.role }
   }
 
-  // トークンが残っていればリロード後も user を復元
-  if (token.value && !user.value) {
+  function isTokenExpired(jwt: string): boolean {
     try {
-      user.value = decodeJwtUser(token.value)
+      const decoded = JSON.parse(atob(jwt.split(".")[1]))
+      return typeof decoded.exp === "number" && decoded.exp * 1000 < Date.now()
     } catch {
-      token.value = null
+      return true
     }
+  }
+
+  // トークンが残っていればリロード後も user を復元。
+  // 期限切れの場合は「見た目はログイン状態だがAPIが全て401で通知等が一切来ない」状態を防ぐため即座に破棄する
+  if (token.value) {
+    if (isTokenExpired(token.value)) {
+      token.value = null
+    } else if (!user.value) {
+      try {
+        user.value = decodeJwtUser(token.value)
+      } catch {
+        token.value = null
+      }
+    }
+  }
+
+  // API呼び出しが401を返した場合の共通処理（トークン期限切れ等）
+  function handleUnauthorized(err: unknown): boolean {
+    const status = (err as { response?: { status?: number }; status?: number })?.response?.status
+      ?? (err as { status?: number })?.status
+    if (status === 401) {
+      logout()
+      return true
+    }
+    return false
   }
 
   function clearError() {
@@ -33,7 +58,7 @@ export const useAuthStore = defineStore("auth", () => {
     isLoading.value = true
     error.value = null
     try {
-      const data = await $fetch<PreCheckResponse>(`${config.public.apiBase}/api/v1/auth/pre-check`, {
+      const data = await $fetch<PreCheckResponse>(`${apiBase}/api/v1/auth/pre-check`, {
         method: "POST",
         body: payload,
       })
@@ -51,7 +76,7 @@ export const useAuthStore = defineStore("auth", () => {
     error.value = null
 
     try {
-      const data = await $fetch<TokenResponse>(`${config.public.apiBase}/api/v1/auth/login`, {
+      const data = await $fetch<TokenResponse>(`${apiBase}/api/v1/auth/login`, {
         method: "POST",
         body: payload,
       })
@@ -72,5 +97,5 @@ export const useAuthStore = defineStore("auth", () => {
     navigateTo("/login")
   }
 
-  return { token, user, isLoading, error, isLoggedIn, clearError, preCheck, login, logout }
+  return { token, user, isLoading, error, isLoggedIn, clearError, preCheck, login, logout, handleUnauthorized }
 })

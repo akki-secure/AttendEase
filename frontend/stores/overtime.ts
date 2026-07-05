@@ -3,7 +3,7 @@ import type { OvertimeCreatePayload, OvertimeMonthlySummary, OvertimeRequest, Re
 import { extractApiError } from "~/utils/validation"
 
 export const useOvertimeStore = defineStore("overtime", () => {
-  const config = useRuntimeConfig()
+  const apiBase = useApiBase()
   const authStore = useAuthStore()
 
   const myOvertimes = ref<OvertimeRequest[]>([])
@@ -22,7 +22,7 @@ export const useOvertimeStore = defineStore("overtime", () => {
     try {
       const params = year ? { year } : {}
       myOvertimes.value = await $fetch<OvertimeRequest[]>(
-        `${config.public.apiBase}/api/v1/overtime/me`,
+        `${apiBase}/api/v1/overtime/me`,
         { headers: authHeaders(), params },
       )
     } catch (err: unknown) {
@@ -37,7 +37,7 @@ export const useOvertimeStore = defineStore("overtime", () => {
     error.value = null
     try {
       const record = await $fetch<OvertimeRequest>(
-        `${config.public.apiBase}/api/v1/overtime`,
+        `${apiBase}/api/v1/overtime`,
         { method: "POST", headers: authHeaders(), body: payload },
       )
       await fetchMyOvertimes()
@@ -54,7 +54,7 @@ export const useOvertimeStore = defineStore("overtime", () => {
     isLoading.value = true
     error.value = null
     try {
-      await $fetch(`${config.public.apiBase}/api/v1/overtime/${id}/cancel`, {
+      await $fetch(`${apiBase}/api/v1/overtime/${id}/cancel`, {
         method: "DELETE",
         headers: authHeaders(),
       })
@@ -72,7 +72,7 @@ export const useOvertimeStore = defineStore("overtime", () => {
     error.value = null
     try {
       pendingOvertimes.value = await $fetch<OvertimeRequest[]>(
-        `${config.public.apiBase}/api/v1/overtime/pending`,
+        `${apiBase}/api/v1/overtime/pending`,
         { headers: authHeaders() },
       )
     } catch (err: unknown) {
@@ -88,7 +88,7 @@ export const useOvertimeStore = defineStore("overtime", () => {
       if (year) params.year = year
       if (month) params.month = month
       monthlySummary.value = await $fetch<OvertimeMonthlySummary[]>(
-        `${config.public.apiBase}/api/v1/overtime/monthly-summary`,
+        `${apiBase}/api/v1/overtime/monthly-summary`,
         { headers: authHeaders(), params },
       )
     } catch {
@@ -100,7 +100,7 @@ export const useOvertimeStore = defineStore("overtime", () => {
     isLoading.value = true
     error.value = null
     try {
-      await $fetch(`${config.public.apiBase}/api/v1/overtime/${id}/approve`, {
+      await $fetch(`${apiBase}/api/v1/overtime/${id}/approve`, {
         method: "POST",
         headers: authHeaders(),
         body: payload,
@@ -118,7 +118,7 @@ export const useOvertimeStore = defineStore("overtime", () => {
     isLoading.value = true
     error.value = null
     try {
-      await $fetch(`${config.public.apiBase}/api/v1/overtime/${id}/reject`, {
+      await $fetch(`${apiBase}/api/v1/overtime/${id}/reject`, {
         method: "POST",
         headers: authHeaders(),
         body: payload,

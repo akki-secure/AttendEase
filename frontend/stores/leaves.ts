@@ -3,7 +3,7 @@ import type { LeaveBalance, LeaveCreatePayload, LeaveRequest, ReviewPayload } fr
 import { extractApiError } from "~/utils/validation"
 
 export const useLeaveStore = defineStore("leaves", () => {
-  const config = useRuntimeConfig()
+  const apiBase = useApiBase()
   const authStore = useAuthStore()
 
   const myLeaves = ref<LeaveRequest[]>([])
@@ -22,7 +22,7 @@ export const useLeaveStore = defineStore("leaves", () => {
     try {
       const params = year ? { year } : {}
       myLeaves.value = await $fetch<LeaveRequest[]>(
-        `${config.public.apiBase}/api/v1/leaves/me`,
+        `${apiBase}/api/v1/leaves/me`,
         { headers: authHeaders(), params },
       )
     } catch (err: unknown) {
@@ -36,7 +36,7 @@ export const useLeaveStore = defineStore("leaves", () => {
     const targetYear = year ?? new Date().getFullYear()
     try {
       myBalance.value = await $fetch<LeaveBalance>(
-        `${config.public.apiBase}/api/v1/leaves/my-balance`,
+        `${apiBase}/api/v1/leaves/my-balance`,
         { headers: authHeaders(), params: { year: targetYear } },
       )
     } catch {
@@ -49,7 +49,7 @@ export const useLeaveStore = defineStore("leaves", () => {
     error.value = null
     try {
       const record = await $fetch<LeaveRequest>(
-        `${config.public.apiBase}/api/v1/leaves`,
+        `${apiBase}/api/v1/leaves`,
         { method: "POST", headers: authHeaders(), body: payload },
       )
       await fetchMyLeaves()
@@ -66,7 +66,7 @@ export const useLeaveStore = defineStore("leaves", () => {
     isLoading.value = true
     error.value = null
     try {
-      await $fetch(`${config.public.apiBase}/api/v1/leaves/${id}/cancel`, {
+      await $fetch(`${apiBase}/api/v1/leaves/${id}/cancel`, {
         method: "DELETE",
         headers: authHeaders(),
       })
@@ -84,7 +84,7 @@ export const useLeaveStore = defineStore("leaves", () => {
     error.value = null
     try {
       pendingLeaves.value = await $fetch<LeaveRequest[]>(
-        `${config.public.apiBase}/api/v1/leaves/pending`,
+        `${apiBase}/api/v1/leaves/pending`,
         { headers: authHeaders() },
       )
     } catch (err: unknown) {
@@ -98,7 +98,7 @@ export const useLeaveStore = defineStore("leaves", () => {
     isLoading.value = true
     error.value = null
     try {
-      await $fetch(`${config.public.apiBase}/api/v1/leaves/${id}/approve`, {
+      await $fetch(`${apiBase}/api/v1/leaves/${id}/approve`, {
         method: "POST",
         headers: authHeaders(),
         body: payload,
@@ -116,7 +116,7 @@ export const useLeaveStore = defineStore("leaves", () => {
     isLoading.value = true
     error.value = null
     try {
-      await $fetch(`${config.public.apiBase}/api/v1/leaves/${id}/reject`, {
+      await $fetch(`${apiBase}/api/v1/leaves/${id}/reject`, {
         method: "POST",
         headers: authHeaders(),
         body: payload,
