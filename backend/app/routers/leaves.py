@@ -9,11 +9,13 @@ from sqlalchemy.orm import selectinload
 from app.core.background import send_emails_background
 from app.core.deps import get_current_user, get_db, require_manager_or_admin
 from app.core.email import send_leave_request_email, send_leave_reviewed_email
+from app.core.labels import LEAVE_TYPE_LABELS
 from app.models.leave import LeaveRequest
 from app.models.leave_balance import LeaveBalance
 from app.models.notification import Notification
 from app.models.user import User
 from app.schemas.leave import (
+    TIME_BASED_LEAVE_TYPES,
     LeaveBalanceResponse,
     LeaveCreateRequest,
     LeaveRequestResponse,
@@ -21,14 +23,6 @@ from app.schemas.leave import (
 )
 
 router = APIRouter(prefix="/api/v1/leaves", tags=["leaves"])
-
-LEAVE_TYPE_JA = {
-    "ANNUAL": "有給休暇",
-    "SICK": "病気休暇",
-    "CONDOLENCE": "慶弔休暇",
-    "SPECIAL": "特別休暇",
-    "UNPAID": "欠勤",
-}
 
 
 def _to_response(record: LeaveRequest) -> LeaveRequestResponse:
@@ -40,6 +34,7 @@ def _to_response(record: LeaveRequest) -> LeaveRequestResponse:
         start_date=record.start_date,
         end_date=record.end_date,
         days=record.days,
+        scheduled_time=record.scheduled_time,
         reason=record.reason,
         status=record.status,
         reviewer_id=record.reviewer_id,
@@ -109,6 +104,7 @@ async def create_leave(
         start_date=payload.start_date,
         end_date=payload.end_date,
         days=days,
+        scheduled_time=payload.scheduled_time,
         reason=payload.reason,
         status="PENDING",
     )
@@ -123,10 +119,14 @@ async def create_leave(
     )
     record = result.scalar_one()
 
-    leave_type_ja = LEAVE_TYPE_JA.get(payload.leave_type, payload.leave_type)
+    leave_type_ja = LEAVE_TYPE_LABELS.get(payload.leave_type, payload.leave_type)
     start_str = payload.start_date.strftime("%Y/%m/%d")
     end_str = payload.end_date.strftime("%Y/%m/%d")
-    message = f"{current_user.name} さんから{leave_type_ja}の申請が届きました（{start_str}〜{end_str}）"
+    if payload.leave_type in TIME_BASED_LEAVE_TYPES:
+        time_str = payload.scheduled_time.strftime("%H:%M") if payload.scheduled_time else ""
+        message = f"{current_user.name} さんから{leave_type_ja}の届出が届きました（{start_str} 予定{time_str}）"
+    else:
+        message = f"{current_user.name} さんから{leave_type_ja}の申請が届きました（{start_str}〜{end_str}）"
 
     managers_result = await db.execute(
         select(User).where(User.role.in_(["MANAGER", "ADMIN"]), User.is_active.is_(True))
@@ -262,7 +262,7 @@ async def approve_leave(
     record.reviewed_at = datetime.now(timezone.utc)
 
     applicant_id = record.user_id
-    leave_type_ja = LEAVE_TYPE_JA.get(record.leave_type, record.leave_type)
+    leave_type_ja = LEAVE_TYPE_LABELS.get(record.leave_type, record.leave_type)
     start_str = record.start_date.strftime("%Y/%m/%d")
     end_str = record.end_date.strftime("%Y/%m/%d")
     message = f"休暇申請（{leave_type_ja} {start_str}〜{end_str}）が承認されました"
@@ -312,7 +312,7 @@ async def reject_leave(
     record.reviewer_comment = payload.comment
     record.reviewed_at = datetime.now(timezone.utc)
 
-    leave_type_ja = LEAVE_TYPE_JA.get(record.leave_type, record.leave_type)
+    leave_type_ja = LEAVE_TYPE_LABELS.get(record.leave_type, record.leave_type)
     start_str = record.start_date.strftime("%Y/%m/%d")
     end_str = record.end_date.strftime("%Y/%m/%d")
     message = f"休暇申請（{leave_type_ja} {start_str}〜{end_str}）が否認されました"

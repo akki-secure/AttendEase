@@ -1,3 +1,5 @@
+from datetime import date
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +14,7 @@ from app.schemas.leave import LeaveBalanceResponse, LeaveBalanceUpdateRequest
 router = APIRouter()
 
 VALID_ROLES = {"EMPLOYEE", "MANAGER", "ADMIN"}
+_INITIAL_ANNUAL_LEAVE_DAYS = 3
 
 
 @router.post("/users", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -41,6 +44,15 @@ async def create_user(
         role=payload.role,
     )
     db.add(user)
+    await db.flush()
+    db.add(
+        LeaveBalance(
+            user_id=user.id,
+            year=date.today().year,
+            granted_days=_INITIAL_ANNUAL_LEAVE_DAYS,
+            used_days=0,
+        )
+    )
     await db.commit()
     await db.refresh(user)
 
@@ -60,9 +72,7 @@ async def get_leave_balances(
     db: AsyncSession = Depends(get_db),
     _: User = Depends(require_admin),
 ) -> list[LeaveBalanceResponse]:
-    from datetime import date as date_type
-
-    target_year = year or date_type.today().year
+    target_year = year or date.today().year
 
     users_result = await db.execute(select(User).where(User.is_active.is_(True)).order_by(User.name))
     users = users_result.scalars().all()

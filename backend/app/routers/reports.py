@@ -9,6 +9,8 @@ from sqlalchemy import and_, extract, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_db, require_manager_or_admin
+from app.core.labels import LEAVE_TYPE_LABELS
+from app.core.time import round_down_overtime_minutes
 from app.models.attendance import AttendanceRecord
 from app.models.leave import LeaveRequest
 from app.models.overtime import OvertimeRequest
@@ -31,8 +33,6 @@ _ATTENDANCE_STATUS_LABEL = {
     "CORRECTION_PENDING": "修正申請中",
     "CORRECTION_APPROVED": "修正承認済",
 }
-
-_LEAVE_TYPE_LABEL = {"ANNUAL": "有給休暇", "SPECIAL": "特別休暇"}
 
 
 def _ensure_utc(dt: datetime | None) -> datetime | None:
@@ -139,7 +139,7 @@ async def get_monthly_summary(
                 if ci and co:
                     w = max(int((co - ci).total_seconds() // 60) - r.break_minutes, 0)
                     total_work += w
-                    total_ot += max(w - _STANDARD_WORK_MINUTES, 0)
+                    total_ot += round_down_overtime_minutes(max(w - _STANDARD_WORK_MINUTES, 0))
         summaries.append(UserMonthlySummary(
             user_id=u.id,
             employee_id=u.employee_id,
@@ -193,7 +193,7 @@ async def download_attendance_csv(
             co = _ensure_utc(r.clock_out)
             if ci and co:
                 work = max(int((co - ci).total_seconds() // 60) - r.break_minutes, 0)
-                ot = max(work - _STANDARD_WORK_MINUTES, 0)
+                ot = round_down_overtime_minutes(max(work - _STANDARD_WORK_MINUTES, 0))
         writer.writerow([
             u.employee_id if u else "",
             u.name if u else "",
@@ -242,7 +242,7 @@ async def download_leaves_csv(
         writer.writerow([
             u.employee_id if u else "",
             u.name if u else "",
-            _LEAVE_TYPE_LABEL.get(lr.leave_type, lr.leave_type),
+            LEAVE_TYPE_LABELS.get(lr.leave_type, lr.leave_type),
             lr.start_date.strftime("%Y-%m-%d"),
             lr.end_date.strftime("%Y-%m-%d"),
             lr.days,

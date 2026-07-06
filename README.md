@@ -537,11 +537,11 @@ npm install
 
 ### テストユーザー
 
-| 社員ID | パスワード | ロール |
-|--------|-----------|--------|
-| ADMIN001 | Admin1234! | システム管理者 |
-| EMP002 | NewPass456! | 承認担当者 |
-| EMP001 | Password1! | 一般社員 |
+| 社員ID | パスワード | ロール | 氏名 |
+|--------|-----------|--------|------|
+| ADMIN001 | Admin1234! | システム管理者 | システム管理者 |
+| EMP002 | NewPass456! | 承認担当者 | 鈴木花子 |
+| EMP001 | Password1! | 一般社員 | 山田太郎 |
 
 > **複数ユーザーで同時に動作確認する場合は、異なるブラウザを使用してください。**
 > 同一ブラウザではセッションが共有されるため、別ユーザーとしてログインできません。
@@ -729,6 +729,13 @@ erDiagram
     string status
     string work_type
     text correction_note
+    datetime original_clock_in
+    datetime original_clock_out
+    int original_break_minutes
+    string original_status
+    int reviewer_id FK
+    text reviewer_comment
+    datetime reviewed_at
     datetime created_at
     datetime updated_at
   }
@@ -741,6 +748,7 @@ erDiagram
     date start_date
     date end_date
     int days
+    time scheduled_time
     text reason
     string status
     text reviewer_comment
@@ -809,6 +817,7 @@ erDiagram
   users ||--o{ notifications : "通知"
   users ||--o{ leave_requests : "承認"
   users ||--o{ overtime_requests : "承認"
+  users ||--o{ attendance_records : "打刻修正承認"
 ```
 
 ---

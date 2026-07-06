@@ -103,7 +103,7 @@ const tableRows = computed(() =>
       ...r,
       _date:      fmtDate(r.date),
       _workType:  workTypeLabel,
-      _workTypeColor: r.work_type === "office" ? "green" : r.work_type === "remote" ? "blue" : null,
+      _workTypeColor: r.work_type === "office" ? ("green" as const) : r.work_type === "remote" ? ("blue" as const) : undefined,
       _clockIn:   fmt(r.clock_in),
       _clockOut:  fmt(r.clock_out),
       _break:     r.break_minutes > 0 ? `${r.break_minutes}分` : "--",
@@ -148,9 +148,8 @@ const todayStr = computed(
 const LEAVE_TYPE_JA: Record<string, string> = {
   ANNUAL: "有給",
   SPECIAL: "特別休暇",
-  SICK: "病休",
-  CONDOLENCE: "慶弔",
-  UNPAID: "欠勤",
+  LATE: "遅刻",
+  EARLY_LEAVE: "早退",
 }
 
 // 日付ごとの休暇マップ（APPROVED または PENDING のみ）

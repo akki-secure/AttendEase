@@ -1,4 +1,4 @@
-export type LeaveType = "ANNUAL" | "SPECIAL"
+export type LeaveType = "ANNUAL" | "SPECIAL" | "LATE" | "EARLY_LEAVE"
 export type LeaveStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED"
 
 export interface LeaveRequest {
@@ -9,6 +9,7 @@ export interface LeaveRequest {
   start_date: string
   end_date: string
   days: number
+  scheduled_time: string | null
   reason: string
   status: LeaveStatus
   reviewer_id: number | null
@@ -30,6 +31,7 @@ export interface LeaveCreatePayload {
   leave_type: LeaveType
   start_date: string
   end_date: string
+  scheduled_time?: string | null
   reason: string
 }
 
