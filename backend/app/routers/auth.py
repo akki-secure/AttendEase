@@ -1,5 +1,5 @@
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import delete, select
@@ -10,6 +10,7 @@ from app.config import settings
 from app.core.deps import get_db
 from app.core.email import send_otp_email, send_password_reset_email
 from app.core.security import create_access_token, dummy_verify, get_password_hash, verify_password
+from app.models.leave_balance import LeaveBalance
 from app.models.otp import OtpCode
 from app.models.password_reset_token import PasswordResetToken
 from app.models.user import User
@@ -30,6 +31,7 @@ router = APIRouter()
 _ERROR_MSG = "社員IDまたはパスワードが正しくありません"
 _LOCK_MSG = "アカウントがロックされています。管理者にお問い合わせください。"
 _MAX_FAILED_ATTEMPTS = 3
+_INITIAL_ANNUAL_LEAVE_DAYS = 3
 
 
 def _mask_email(email: str) -> str:
@@ -62,6 +64,15 @@ async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_db))
         role="EMPLOYEE",
     )
     db.add(user)
+    await db.flush()
+    db.add(
+        LeaveBalance(
+            user_id=user.id,
+            year=date.today().year,
+            granted_days=_INITIAL_ANNUAL_LEAVE_DAYS,
+            used_days=0,
+        )
+    )
     await db.commit()
     await db.refresh(user)
 

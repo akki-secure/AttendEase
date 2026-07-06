@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { LeaveCreatePayload } from "~/types/leave"
+import { LEAVE_TYPE_LABEL, LEAVE_TYPE_COLOR, isTimeBasedLeaveType } from "~/utils/leaveLabels"
 
 const authStore = useAuthStore()
 const leaveStore = useLeaveStore()
@@ -16,13 +17,18 @@ const form = ref<LeaveCreatePayload>({
   leave_type: "ANNUAL",
   start_date: "",
   end_date: "",
+  scheduled_time: null,
   reason: "",
 })
 
 const leaveTypeOptions = [
   { label: "有給休暇", value: "ANNUAL" },
   { label: "特別休暇", value: "SPECIAL" },
+  { label: "遅刻", value: "LATE" },
+  { label: "早退", value: "EARLY_LEAVE" },
 ]
+
+const isTimeBasedForm = computed(() => isTimeBasedLeaveType(form.value.leave_type))
 
 const computedDays = computed(() => {
   if (!form.value.start_date || !form.value.end_date) return 0
@@ -40,13 +46,22 @@ await Promise.all([
 
 async function submitForm() {
   formError.value = null
-  if (!form.value.start_date || !form.value.end_date) {
+  if (!form.value.start_date || (!isTimeBasedForm.value && !form.value.end_date)) {
     formError.value = "開始日と終了日を入力してください"
     return
   }
-  if (form.value.start_date > form.value.end_date) {
-    formError.value = "終了日は開始日以降を指定してください"
-    return
+  if (isTimeBasedForm.value) {
+    form.value.end_date = form.value.start_date
+    if (!form.value.scheduled_time) {
+      formError.value = "本来の予定時刻を入力してください"
+      return
+    }
+  } else {
+    form.value.scheduled_time = null
+    if (form.value.start_date > form.value.end_date) {
+      formError.value = "終了日は開始日以降を指定してください"
+      return
+    }
   }
   if (!form.value.reason.trim()) {
     formError.value = "申請理由を入力してください"
@@ -55,7 +70,7 @@ async function submitForm() {
   try {
     await leaveStore.createLeave(form.value)
     showForm.value = false
-    form.value = { leave_type: "ANNUAL", start_date: "", end_date: "", reason: "" }
+    form.value = { leave_type: "ANNUAL", start_date: "", end_date: "", scheduled_time: null, reason: "" }
     await leaveStore.fetchMyBalance(currentYear)
   } catch {
     formError.value = leaveStore.error
@@ -75,11 +90,6 @@ const statusMap: Record<string, { label: string; color: "amber" | "green" | "red
   APPROVED:  { label: "承認済",    color: "green" },
   REJECTED:  { label: "却下",      color: "red" },
   CANCELLED: { label: "キャンセル", color: "gray" },
-}
-
-const leaveTypeLabel: Record<string, string> = {
-  ANNUAL:  "有給休暇",
-  SPECIAL: "特別休暇",
 }
 
 function fmtDate(s: string) {
@@ -167,14 +177,18 @@ const { roleTheme } = useRoleTheme()
               />
             </div>
             <div>
-              <label class="block text-xs font-medium text-gray-600 mb-1">開始日</label>
+              <label class="block text-xs font-medium text-gray-600 mb-1">{{ isTimeBasedForm ? '対象日' : '開始日' }}</label>
               <UInput v-model="form.start_date" type="date" class="w-full" />
             </div>
-            <div>
+            <div v-if="!isTimeBasedForm">
               <label class="block text-xs font-medium text-gray-600 mb-1">終了日</label>
               <UInput v-model="form.end_date" type="date" class="w-full" />
             </div>
-            <div class="sm:col-span-2 flex items-center gap-2">
+            <div v-if="isTimeBasedForm">
+              <label class="block text-xs font-medium text-gray-600 mb-1">本来の予定時刻</label>
+              <UInput :model-value="form.scheduled_time ?? undefined" @update:model-value="form.scheduled_time = $event" type="time" class="w-full" />
+            </div>
+            <div v-if="!isTimeBasedForm" class="sm:col-span-2 flex items-center gap-2">
               <UIcon name="i-heroicons-calendar-days" class="w-4 h-4 text-gray-400" />
               <span class="text-sm text-gray-600">申請日数: <strong>{{ computedDays }}</strong> 日</span>
             </div>
@@ -214,13 +228,16 @@ const { roleTheme } = useRoleTheme()
             <tbody class="divide-y divide-gray-50">
               <tr v-for="req in leaveStore.myLeaves" :key="req.id" class="hover:bg-gray-50 transition-colors">
                 <td class="px-4 py-3 whitespace-nowrap">
-                  <UBadge :color="req.leave_type === 'ANNUAL' ? 'blue' : 'purple'" variant="subtle" size="xs">
-                    {{ leaveTypeLabel[req.leave_type] }}
+                  <UBadge :color="LEAVE_TYPE_COLOR[req.leave_type] ?? 'gray'" variant="subtle" size="xs">
+                    {{ LEAVE_TYPE_LABEL[req.leave_type] ?? req.leave_type }}
                   </UBadge>
                 </td>
                 <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ fmtDate(req.start_date) }}</td>
                 <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ fmtDate(req.end_date) }}</td>
-                <td class="px-4 py-3 font-semibold text-gray-700 whitespace-nowrap">{{ req.days }}日</td>
+                <td class="px-4 py-3 font-semibold text-gray-700 whitespace-nowrap">
+                  <span v-if="req.scheduled_time">予定 {{ req.scheduled_time.slice(0, 5) }}</span>
+                  <span v-else>{{ req.days }}日</span>
+                </td>
                 <td class="px-4 py-3 text-gray-500 max-w-xs truncate">{{ req.reason }}</td>
                 <td class="px-4 py-3 whitespace-nowrap">
                   <div>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { LeaveRequest } from "~/types/leave"
+import { LEAVE_TYPE_LABEL, LEAVE_TYPE_COLOR } from "~/utils/leaveLabels"
 
 definePageMeta({ middleware: ["manager-or-admin"] })
 
@@ -33,11 +34,6 @@ async function confirmReview() {
   } catch {
     // error は store に格納済み
   }
-}
-
-const leaveTypeLabel: Record<string, string> = {
-  ANNUAL:  "有給休暇",
-  SPECIAL: "特別休暇",
 }
 
 function fmtDate(s: string) {
@@ -119,13 +115,16 @@ const { roleTheme } = useRoleTheme()
               <tr v-for="req in leaveStore.pendingLeaves" :key="req.id" class="hover:bg-gray-50 transition-colors">
                 <td class="px-4 py-3 font-medium text-gray-700 whitespace-nowrap">{{ req.user_name }}</td>
                 <td class="px-4 py-3 whitespace-nowrap">
-                  <UBadge :color="req.leave_type === 'ANNUAL' ? 'blue' : 'purple'" variant="subtle" size="xs">
-                    {{ leaveTypeLabel[req.leave_type] }}
+                  <UBadge :color="LEAVE_TYPE_COLOR[req.leave_type] ?? 'gray'" variant="subtle" size="xs">
+                    {{ LEAVE_TYPE_LABEL[req.leave_type] ?? req.leave_type }}
                   </UBadge>
                 </td>
                 <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ fmtDate(req.start_date) }}</td>
                 <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ fmtDate(req.end_date) }}</td>
-                <td class="px-4 py-3 font-semibold text-gray-700 whitespace-nowrap">{{ req.days }}日</td>
+                <td class="px-4 py-3 font-semibold text-gray-700 whitespace-nowrap">
+                  <span v-if="req.scheduled_time">予定 {{ req.scheduled_time.slice(0, 5) }}</span>
+                  <span v-else>{{ req.days }}日</span>
+                </td>
                 <td class="px-4 py-3 text-gray-500 max-w-xs truncate">{{ req.reason }}</td>
                 <td class="px-4 py-3 text-gray-400 whitespace-nowrap">{{ fmtDatetime(req.created_at) }}</td>
                 <td class="px-4 py-3 whitespace-nowrap">
@@ -160,8 +159,9 @@ const { roleTheme } = useRoleTheme()
         <div class="space-y-4">
           <div class="bg-gray-50 rounded-lg px-4 py-3 text-sm space-y-1">
             <p><span class="text-gray-500">申請者:</span> <strong>{{ reviewTarget.user_name }}</strong></p>
-            <p><span class="text-gray-500">種別:</span> {{ leaveTypeLabel[reviewTarget.leave_type] }}</p>
-            <p><span class="text-gray-500">期間:</span> {{ fmtDate(reviewTarget.start_date) }} 〜 {{ fmtDate(reviewTarget.end_date) }}（{{ reviewTarget.days }}日）</p>
+            <p><span class="text-gray-500">種別:</span> {{ LEAVE_TYPE_LABEL[reviewTarget.leave_type] ?? reviewTarget.leave_type }}</p>
+            <p v-if="reviewTarget.scheduled_time"><span class="text-gray-500">対象日:</span> {{ fmtDate(reviewTarget.start_date) }}（予定 {{ reviewTarget.scheduled_time.slice(0, 5) }}）</p>
+            <p v-else><span class="text-gray-500">期間:</span> {{ fmtDate(reviewTarget.start_date) }} 〜 {{ fmtDate(reviewTarget.end_date) }}（{{ reviewTarget.days }}日）</p>
             <p><span class="text-gray-500">理由:</span> {{ reviewTarget.reason }}</p>
           </div>
 

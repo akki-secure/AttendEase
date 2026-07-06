@@ -12,6 +12,7 @@ from sqlalchemy.orm import selectinload
 from app.core.background import send_emails_background
 from app.core.deps import get_current_user, get_db, require_manager_or_admin
 from app.core.email import send_correction_request_email, send_correction_reviewed_email
+from app.core.time import round_down_overtime_minutes
 from app.models.attendance import AttendanceRecord
 from app.models.notification import Notification
 from app.models.user import User
@@ -327,7 +328,7 @@ async def get_my_monthly(
     for r in responses:
         w = r.work_minutes or 0
         total_work += w
-        total_overtime += max(w - _STANDARD_WORK_MINUTES, 0)
+        total_overtime += round_down_overtime_minutes(max(w - _STANDARD_WORK_MINUTES, 0))
 
     return MonthlyAttendanceResponse(
         month=month,
@@ -365,7 +366,7 @@ async def get_my_yearly(
             co = _ensure_utc(rec.clock_out)
             if ci and co:
                 work = max(int((co - ci).total_seconds() // 60) - rec.break_minutes, 0)
-                ot = max(work - _STANDARD_WORK_MINUTES, 0)
+                ot = round_down_overtime_minutes(max(work - _STANDARD_WORK_MINUTES, 0))
                 monthly[key].work_minutes += work
                 monthly[key].overtime_minutes += ot
 
