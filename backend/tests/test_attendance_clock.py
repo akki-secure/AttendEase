@@ -48,7 +48,9 @@ async def test_clock_out_after_clock_in_succeeds(client: AsyncClient, employee):
     assert res.status_code == 200
     body = res.json()
     assert body["status"] == "CLOSED"
-    assert body["work_minutes"] == 480
+    # 8時間勤務 -> 労基法上の休憩45分が自動付与される
+    assert body["break_minutes"] == 45
+    assert body["work_minutes"] == 435
 
 
 async def test_clock_out_before_clock_in_rejected(client: AsyncClient, employee):
