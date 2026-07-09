@@ -12,7 +12,7 @@ from sqlalchemy.orm import selectinload
 from app.core.background import send_emails_background
 from app.core.deps import get_current_user, get_db, require_manager_or_admin
 from app.core.email import send_correction_request_email, send_correction_reviewed_email
-from app.core.time import round_down_overtime_minutes
+from app.core.time import legal_break_minutes, round_down_overtime_minutes
 from app.models.attendance import AttendanceRecord
 from app.models.notification import Notification
 from app.models.user import User
@@ -166,7 +166,9 @@ async def clock_out(
             detail="退勤時刻は出勤時刻より後にしてください",
         )
 
+    total_minutes = int((clock_out_dt - _ensure_utc(record.clock_in)).total_seconds() // 60)
     record.clock_out = clock_out_dt
+    record.break_minutes = legal_break_minutes(total_minutes)
     record.status = "CLOSED"
     await db.commit()
     await db.refresh(record)
@@ -200,6 +202,9 @@ async def fix_today_clock_in(
     record.clock_in = clock_in_dt
     if "work_type" in payload.model_fields_set:
         record.work_type = payload.work_type
+    if record.clock_out:
+        total_minutes = int((_ensure_utc(record.clock_out) - clock_in_dt).total_seconds() // 60)
+        record.break_minutes = legal_break_minutes(total_minutes)
     await db.commit()
     await db.refresh(record)
     return _to_response(record)
@@ -228,7 +233,9 @@ async def fix_today_clock_out(
             detail="退勤時刻は出勤時刻より後にしてください",
         )
 
+    total_minutes = int((clock_out_dt - _ensure_utc(record.clock_in)).total_seconds() // 60)
     record.clock_out = clock_out_dt
+    record.break_minutes = legal_break_minutes(total_minutes)
     await db.commit()
     await db.refresh(record)
     return _to_response(record)
