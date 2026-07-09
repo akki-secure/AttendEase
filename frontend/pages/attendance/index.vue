@@ -97,7 +97,8 @@ const columns = [
 
 const tableRows = computed(() =>
   (monthly.value?.records ?? []).map((r) => {
-    const overtime = r.work_minutes != null ? Math.max(r.work_minutes - 480, 0) : null
+    const rawOvertime = r.work_minutes != null ? Math.max(r.work_minutes - 480, 0) : null
+    const overtime = rawOvertime != null ? Math.floor(rawOvertime / 15) * 15 : null
     const workTypeLabel = r.work_type === "office" ? "出社" : r.work_type === "remote" ? "リモート" : null
     return {
       ...r,
