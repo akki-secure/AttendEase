@@ -49,6 +49,7 @@ async def test_create_past_record_future_date_rejected(client: AsyncClient, empl
             "date": future.isoformat(),
             "clock_in": clock_in.isoformat(),
             "clock_out": (clock_in + timedelta(hours=8)).isoformat(),
+            "work_type": "office",
         },
         headers=auth_headers(employee),
     )
@@ -64,6 +65,7 @@ async def test_create_past_record_clock_out_before_clock_in_rejected(client: Asy
             "date": target_date.isoformat(),
             "clock_in": clock_in.isoformat(),
             "clock_out": (clock_in - timedelta(hours=1)).isoformat(),
+            "work_type": "office",
         },
         headers=auth_headers(employee),
     )
@@ -77,6 +79,7 @@ async def test_create_past_record_duplicate_conflicts(client: AsyncClient, emplo
         "date": target_date.isoformat(),
         "clock_in": clock_in.isoformat(),
         "clock_out": (clock_in + timedelta(hours=8)).isoformat(),
+        "work_type": "office",
     }
     headers = auth_headers(employee)
     first = await client.post("/api/v1/attendance/record", json=payload, headers=headers)

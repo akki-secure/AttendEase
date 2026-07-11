@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ASCII_ONLY } from "~/utils/validation"
+
 definePageMeta({
   layout: "auth",
 })
@@ -23,8 +25,6 @@ const errors = reactive({
   password: "",
   confirmPassword: "",
 })
-
-import { ASCII_ONLY } from "~/utils/validation"
 
 function validate() {
   errors.employee_id = employeeId.value.trim() ? "" : "社員IDを入力してください"
