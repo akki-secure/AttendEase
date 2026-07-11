@@ -78,7 +78,7 @@ const {
             </template>
           </UInput>
           <template #hint>
-            <span class="text-xs text-gray-400">半角英数字・記号のみ（8文字以上）</span>
+            <span class="text-xs text-gray-400">半角英数字・大文字英語・記号のみ（8文字以上）</span>
           </template>
         </UFormGroup>
 
