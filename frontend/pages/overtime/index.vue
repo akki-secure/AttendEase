@@ -189,7 +189,7 @@ const { roleTheme } = useRoleTheme()
                 v-model="form.start_time_input"
                 type="time"
                 class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-              />
+              >
             </div>
             <div>
               <label class="block text-xs font-medium text-gray-600 mb-1">終了時刻</label>
@@ -197,7 +197,7 @@ const { roleTheme } = useRoleTheme()
                 v-model="form.end_time_input"
                 type="time"
                 class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-              />
+              >
             </div>
             <div class="sm:col-span-2 flex items-center gap-2">
               <UIcon name="i-heroicons-clock" class="w-4 h-4 text-gray-400" />

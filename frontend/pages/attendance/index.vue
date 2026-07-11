@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import type { MonthlyAttendanceResponse } from "~/types/attendance"
-import type { WorkType } from "~/types/attendance"
+import type { MonthlyAttendanceResponse, WorkType  } from "~/types/attendance"
 import type { LeaveRequest } from "~/types/leave"
 
 const authStore = useAuthStore()
@@ -468,7 +467,7 @@ const { roleTheme } = useRoleTheme()
               v-model="modalClockIn"
               type="time"
               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
-            />
+            >
           </div>
 
           <!-- 退勤時刻 -->
@@ -478,7 +477,7 @@ const { roleTheme } = useRoleTheme()
               v-model="modalClockOut"
               type="time"
               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
-            />
+            >
           </div>
 
           <!-- 休憩時間 -->
@@ -491,7 +490,7 @@ const { roleTheme } = useRoleTheme()
               max="480"
               step="15"
               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
-            />
+            >
           </div>
 
           <!-- エラー -->

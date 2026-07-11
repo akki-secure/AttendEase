@@ -293,8 +293,9 @@ const annualOtPct  = computed(() => Math.min((annualOtMin.value / OT_LIMIT_YEAR)
                 v-model="clockInTime"
                 type="time"
                 class="w-full text-center text-3xl font-bold font-mono text-green-800 bg-white border border-green-200 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-green-400 cursor-pointer"
-              />
-              <UButton color="green" size="sm" icon="i-heroicons-arrow-right-circle"
+              >
+              <UButton
+color="green" size="sm" icon="i-heroicons-arrow-right-circle"
                 class="w-full justify-center font-semibold"
                 :loading="attendanceStore.isLoading" :disabled="attendanceStore.isLoading"
                 @click="handleClockIn">出勤する</UButton>
@@ -311,7 +312,8 @@ const annualOtPct  = computed(() => Math.min((annualOtMin.value / OT_LIMIT_YEAR)
                   :color="attendanceStore.today.record.work_type === 'office' ? 'green' : 'blue'"
                   variant="subtle" size="xs"
                 >{{ attendanceStore.today.record.work_type === 'office' ? '🏢 出社' : '🏠 リモート' }}</UBadge>
-                <UButton color="green" variant="soft" size="xs" icon="i-heroicons-pencil-square"
+                <UButton
+color="green" variant="soft" size="xs" icon="i-heroicons-pencil-square"
                   @click="startFixClockIn">時刻を修正</UButton>
               </template>
               <template v-else>
@@ -327,12 +329,15 @@ const annualOtPct  = computed(() => Math.min((annualOtMin.value / OT_LIMIT_YEAR)
                     @click="fixClockInWorkType = fixClockInWorkType === 'remote' ? null : 'remote'"
                   >🏠 リモート</button>
                 </div>
-                <input v-model="fixClockInTime" type="time"
-                  class="w-full text-center text-2xl font-bold font-mono text-green-800 bg-white border border-green-300 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-green-400" />
+                <input
+v-model="fixClockInTime" type="time"
+                  class="w-full text-center text-2xl font-bold font-mono text-green-800 bg-white border border-green-300 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-green-400" >
                 <div class="flex gap-2 w-full">
-                  <UButton color="gray" variant="soft" size="xs" class="flex-1 justify-center"
+                  <UButton
+color="gray" variant="soft" size="xs" class="flex-1 justify-center"
                     @click="isFixingClockIn = false">キャンセル</UButton>
-                  <UButton color="green" size="xs" icon="i-heroicons-check" class="flex-1 justify-center"
+                  <UButton
+color="green" size="xs" icon="i-heroicons-check" class="flex-1 justify-center"
                     :loading="attendanceStore.isLoading" :disabled="attendanceStore.isLoading"
                     @click="handleFixClockIn">修正する</UButton>
                 </div>
@@ -355,8 +360,9 @@ const annualOtPct  = computed(() => Math.min((annualOtMin.value / OT_LIMIT_YEAR)
                 v-model="clockOutTime"
                 type="time"
                 class="w-full text-center text-3xl font-bold font-mono text-orange-800 bg-white border border-orange-200 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400 cursor-pointer"
-              />
-              <UButton color="orange" size="sm" icon="i-heroicons-arrow-left-circle"
+              >
+              <UButton
+color="orange" size="sm" icon="i-heroicons-arrow-left-circle"
                 class="w-full justify-center font-semibold"
                 :loading="attendanceStore.isLoading" :disabled="attendanceStore.isLoading"
                 @click="handleClockOut">退勤する</UButton>
@@ -368,16 +374,20 @@ const annualOtPct  = computed(() => Math.min((annualOtMin.value / OT_LIMIT_YEAR)
                 <p class="text-3xl font-bold text-orange-800 font-mono py-1">
                   {{ fmt(attendanceStore.today?.record?.clock_out) }}
                 </p>
-                <UButton color="orange" variant="soft" size="xs" icon="i-heroicons-pencil-square"
+                <UButton
+color="orange" variant="soft" size="xs" icon="i-heroicons-pencil-square"
                   @click="startFixClockOut">時刻を修正</UButton>
               </template>
               <template v-else>
-                <input v-model="fixClockOutTime" type="time"
-                  class="w-full text-center text-2xl font-bold font-mono text-orange-800 bg-white border border-orange-300 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400" />
+                <input
+v-model="fixClockOutTime" type="time"
+                  class="w-full text-center text-2xl font-bold font-mono text-orange-800 bg-white border border-orange-300 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400" >
                 <div class="flex gap-2 w-full">
-                  <UButton color="gray" variant="soft" size="xs" class="flex-1 justify-center"
+                  <UButton
+color="gray" variant="soft" size="xs" class="flex-1 justify-center"
                     @click="isFixingClockOut = false">キャンセル</UButton>
-                  <UButton color="orange" size="xs" icon="i-heroicons-check" class="flex-1 justify-center"
+                  <UButton
+color="orange" size="xs" icon="i-heroicons-check" class="flex-1 justify-center"
                     :loading="attendanceStore.isLoading" :disabled="attendanceStore.isLoading"
                     @click="handleFixClockOut">修正する</UButton>
                 </div>
@@ -399,7 +409,8 @@ const annualOtPct  = computed(() => Math.min((annualOtMin.value / OT_LIMIT_YEAR)
         <!-- 修正申請（出勤・退勤両方まとめて修正 / 管理者承認が必要） -->
         <template v-if="canCorrect">
           <div v-if="!isEditing" class="flex justify-center mb-4">
-            <UButton color="amber" variant="soft" size="sm" icon="i-heroicons-clipboard-document-check"
+            <UButton
+color="amber" variant="soft" size="sm" icon="i-heroicons-clipboard-document-check"
               @click="startEdit">出退勤を両方修正申請する</UButton>
           </div>
           <div v-else class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 space-y-3">
@@ -407,23 +418,27 @@ const annualOtPct  = computed(() => Math.min((annualOtMin.value / OT_LIMIT_YEAR)
             <div class="grid grid-cols-2 gap-3">
               <div>
                 <label class="text-xs text-gray-500 mb-1 block">出勤時刻</label>
-                <input v-model="editClockIn" type="time"
-                  class="w-full text-center text-lg font-mono bg-white border border-amber-300 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                <input
+v-model="editClockIn" type="time"
+                  class="w-full text-center text-lg font-mono bg-white border border-amber-300 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400" >
               </div>
               <div>
                 <label class="text-xs text-gray-500 mb-1 block">退勤時刻</label>
-                <input v-model="editClockOut" type="time"
-                  class="w-full text-center text-lg font-mono bg-white border border-amber-300 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                <input
+v-model="editClockOut" type="time"
+                  class="w-full text-center text-lg font-mono bg-white border border-amber-300 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400" >
               </div>
             </div>
             <div>
               <label class="text-xs text-gray-500 mb-1 block">修正理由（必須）</label>
-              <input v-model="correctionNote" type="text" placeholder="例: 打刻漏れのため"
-                class="w-full bg-white border border-amber-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+              <input
+v-model="correctionNote" type="text" placeholder="例: 打刻漏れのため"
+                class="w-full bg-white border border-amber-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" >
             </div>
             <div class="flex gap-2 justify-end">
               <UButton color="gray" variant="soft" size="sm" @click="isEditing = false">キャンセル</UButton>
-              <UButton color="amber" size="sm" icon="i-heroicons-paper-airplane"
+              <UButton
+color="amber" size="sm" icon="i-heroicons-paper-airplane"
                 :loading="attendanceStore.isLoading"
                 :disabled="attendanceStore.isLoading || !correctionNote.trim()"
                 @click="handleCorrection">申請する</UButton>
@@ -478,7 +493,7 @@ const annualOtPct  = computed(() => Math.min((annualOtMin.value / OT_LIMIT_YEAR)
             </div>
             <!-- 各月バー -->
             <div
-              v-for="(m, i) in yearlyData.months"
+              v-for="m in yearlyData.months"
               :key="m.month"
               class="flex-1 relative flex flex-col justify-end h-full group"
             >
@@ -503,9 +518,9 @@ const annualOtPct  = computed(() => Math.min((annualOtMin.value / OT_LIMIT_YEAR)
 
           <!-- 凡例 -->
           <div class="flex gap-4 text-[10px] text-gray-500 mb-4">
-            <div class="flex items-center gap-1"><div class="w-2.5 h-2.5 rounded-sm bg-brand-400"></div>通常</div>
-            <div class="flex items-center gap-1"><div class="w-2.5 h-2.5 rounded-sm bg-amber-400"></div>注意（30h+）</div>
-            <div class="flex items-center gap-1"><div class="w-2.5 h-2.5 rounded-sm bg-red-500"></div>上限超（45h+）</div>
+            <div class="flex items-center gap-1"><div class="w-2.5 h-2.5 rounded-sm bg-brand-400"/>通常</div>
+            <div class="flex items-center gap-1"><div class="w-2.5 h-2.5 rounded-sm bg-amber-400"/>注意（30h+）</div>
+            <div class="flex items-center gap-1"><div class="w-2.5 h-2.5 rounded-sm bg-red-500"/>上限超（45h+）</div>
           </div>
 
           <!-- 年間合計 -->

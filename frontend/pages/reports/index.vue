@@ -136,7 +136,7 @@ const { roleTheme } = useRoleTheme()
             type="month"
             class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 bg-white"
             @change="fetchSummary"
-          />
+          >
           <UButton
             color="indigo"
             variant="soft"

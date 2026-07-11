@@ -6,6 +6,11 @@ COPY package.json package-lock.json* ./
 RUN npm install
 
 COPY . .
+
+# EC2のhairpin NAT対策でSPAモードに切り替える場合に使用（PR #11参照）。
+# nuxt.config.tsのssr設定はビルド時に評価されるため、ここでビルド引数として受け取る。
+ARG NUXT_SSR=true
+ENV NUXT_SSR=$NUXT_SSR
 RUN npm run build
 
 FROM node:20-alpine
