@@ -28,7 +28,24 @@ const leaveTypeOptions = [
   { label: "早退", value: "EARLY_LEAVE" },
 ]
 
+const specialReasonOptions = [
+  { label: "慶弔休暇（弔事・慶事）", value: "慶弔休暇" },
+  { label: "出産休暇", value: "出産休暇" },
+  { label: "創立記念日休暇", value: "創立記念日休暇" },
+  { label: "その他", value: "その他" },
+]
+
+const specialCategory = ref<string>("")
+const specialNote = ref<string>("")
+
 const isTimeBasedForm = computed(() => isTimeBasedLeaveType(form.value.leave_type))
+const isSpecialForm = computed(() => form.value.leave_type === "SPECIAL")
+
+watch(() => form.value.leave_type, () => {
+  specialCategory.value = ""
+  specialNote.value = ""
+  form.value.reason = ""
+})
 
 const computedDays = computed(() => {
   if (!form.value.start_date || !form.value.end_date) return 0
@@ -63,7 +80,13 @@ async function submitForm() {
       return
     }
   }
-  if (!form.value.reason.trim()) {
+  if (isSpecialForm.value) {
+    if (!specialCategory.value) {
+      formError.value = "特別休暇の種類を選択してください"
+      return
+    }
+    form.value.reason = specialCategory.value + (specialNote.value.trim() ? "：" + specialNote.value.trim() : "")
+  } else if (!form.value.reason.trim()) {
     formError.value = "申請理由を入力してください"
     return
   }
@@ -71,6 +94,8 @@ async function submitForm() {
     await leaveStore.createLeave(form.value)
     showForm.value = false
     form.value = { leave_type: "ANNUAL", start_date: "", end_date: "", scheduled_time: null, reason: "" }
+    specialCategory.value = ""
+    specialNote.value = ""
     await leaveStore.fetchMyBalance(currentYear)
   } catch {
     formError.value = leaveStore.error
@@ -192,7 +217,24 @@ const { roleTheme } = useRoleTheme()
               <UIcon name="i-heroicons-calendar-days" class="w-4 h-4 text-gray-400" />
               <span class="text-sm text-gray-600">申請日数: <strong>{{ computedDays }}</strong> 日</span>
             </div>
-            <div class="sm:col-span-2">
+            <template v-if="isSpecialForm">
+              <div class="sm:col-span-2">
+                <label class="block text-xs font-medium text-gray-600 mb-1">特別休暇の種類</label>
+                <USelect
+                  v-model="specialCategory"
+                  :options="specialReasonOptions"
+                  option-attribute="label"
+                  value-attribute="value"
+                  placeholder="種類を選択してください"
+                  class="w-full"
+                />
+              </div>
+              <div class="sm:col-span-2">
+                <label class="block text-xs font-medium text-gray-600 mb-1">補足（任意）</label>
+                <UTextarea v-model="specialNote" placeholder="補足があれば入力（任意）" :rows="3" class="w-full" />
+              </div>
+            </template>
+            <div v-else class="sm:col-span-2">
               <label class="block text-xs font-medium text-gray-600 mb-1">申請理由</label>
               <UTextarea v-model="form.reason" placeholder="申請理由を入力してください" :rows="3" class="w-full" />
             </div>

@@ -6,7 +6,7 @@ export default defineNuxtConfig({
   // ローカル/Docker Compose開発では既定でSSRを有効にする。
   ssr: process.env.NUXT_SSR !== "false",
 
-  modules: ["@nuxt/ui", "@pinia/nuxt", "@vee-validate/nuxt"],
+  modules: ["@nuxt/ui", "@pinia/nuxt", "@vee-validate/nuxt", "@nuxt/eslint"],
 
   css: ["~/assets/css/main.css"],
 
