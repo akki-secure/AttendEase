@@ -16,8 +16,8 @@ async def test_overtime_is_rounded_down_to_15_minutes(client: AsyncClient, emplo
     )
     res = await client.post(
         "/api/v1/attendance/clock-out",
-        # 実働8時間40分 -> 残業40分 -> 15分単位切り捨てで30分
-        json={"clock_out": (now + timedelta(hours=8, minutes=40)).isoformat()},
+        # 総経過9時間40分 -> 法定休憩60分を自動控除 -> 実働8時間40分 -> 残業40分 -> 15分単位切り捨てで30分
+        json={"clock_out": (now + timedelta(hours=9, minutes=40)).isoformat()},
         headers=headers,
     )
     assert res.status_code == 200
@@ -40,8 +40,8 @@ async def test_overtime_under_15_minutes_rounds_to_zero(client: AsyncClient, emp
     )
     await client.post(
         "/api/v1/attendance/clock-out",
-        # 実働8時間10分 -> 残業10分 -> 15分未満なので0分
-        json={"clock_out": (now + timedelta(hours=8, minutes=10)).isoformat()},
+        # 総経過9時間5分 -> 法定休憩60分を自動控除 -> 実働8時間5分 -> 残業5分 -> 15分未満なので0分
+        json={"clock_out": (now + timedelta(hours=9, minutes=5)).isoformat()},
         headers=headers,
     )
 

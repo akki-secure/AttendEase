@@ -200,7 +200,7 @@ const { roleTheme } = useRoleTheme()
               placeholder="氏名"
               class="w-full bg-white border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2"
               :class="nameError ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-brand-400'"
-            />
+            >
             <p v-if="nameError" class="text-xs text-red-500 mt-1">{{ nameError }}</p>
           </div>
 
@@ -213,7 +213,7 @@ const { roleTheme } = useRoleTheme()
               placeholder="メールアドレス（通知の送信先）"
               class="w-full bg-white border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2"
               :class="emailError ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-brand-400'"
-            />
+            >
             <p v-if="emailError" class="text-xs text-red-500 mt-1">{{ emailError }}</p>
             <p v-else class="text-xs text-gray-400 mt-1">申請・承認の通知メールを受け取るために使用されます</p>
           </div>
@@ -239,7 +239,7 @@ const { roleTheme } = useRoleTheme()
                   :type="showCurrentPassword ? 'text' : 'password'"
                   placeholder="現在のパスワード"
                   class="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 pr-11 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
-                />
+                >
                 <button
                   type="button"
                   class="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600"
@@ -258,7 +258,7 @@ const { roleTheme } = useRoleTheme()
                   placeholder="半角英数字・大文字英語・記号のみ（8文字以上）"
                   class="w-full bg-white border rounded-lg px-4 py-3 pr-11 text-sm focus:outline-none focus:ring-2"
                   :class="newPasswordError ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-brand-400'"
-                />
+                >
                 <button
                   type="button"
                   class="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600"
@@ -278,7 +278,7 @@ const { roleTheme } = useRoleTheme()
                   placeholder="もう一度入力"
                   class="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 pr-11 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
                   :class="confirmPassword && newPassword !== confirmPassword ? 'border-red-400 focus:ring-red-400' : ''"
-                />
+                >
                 <button
                   type="button"
                   class="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600"

@@ -13,10 +13,14 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile.prod
+      args:
+        # EC2では .env で NUXT_SSR=false にしてhairpin NAT問題を回避する（PR #11参照）
+        NUXT_SSR: ${NUXT_SSR:-true}
     ports:
       - "3000:3000"
     environment:
       NUXT_PUBLIC_API_BASE: ${NUXT_PUBLIC_API_BASE:-http://13.239.31.224:8000}
+      NUXT_SSR: ${NUXT_SSR:-true}
     depends_on:
       - backend
     restart: unless-stopped
