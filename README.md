@@ -18,7 +18,10 @@
 > [!WARNING]
 > **AWSでデプロイ状態の場合の注意点**
 >
+> デプロイ先URL: http://13.239.31.224:3000/login
+>
 > 低い性能のAWSの「t3.micro」サーバーを使って、イベント処理が遅れているため、ログイン時や登録などにエラーが起きますが、２回~3回試さないと成功できませんので、ご注意ください。
+> データ取得失敗などでデータが表示されない場合は、「再読み込み（リロード）」してください。
 
 ---
 ## AttendEase(勤怠管理システム)の流れ
@@ -474,7 +477,7 @@
 | フロントエンド | Vue 3 / Nuxt 3 / TypeScript / Tailwind CSS / Nuxt UI / Pinia |
 | バックエンド | FastAPI / SQLAlchemy 2.0 / Alembic / python-jose / Pydantic v2 |
 | データベース | SQLite 3 |
-| インフラ | Docker / Docker Compose |
+| インフラ | Docker / Docker Compose / AWS EC2 (t3.micro) |
 
 ---
 

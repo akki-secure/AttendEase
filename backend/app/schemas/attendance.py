@@ -65,7 +65,7 @@ class PastRecordRequest(BaseModel):
     date: date
     clock_in: datetime
     clock_out: datetime
-    work_type: Optional[Literal["office", "remote"]] = None
+    work_type: Literal["office", "remote"]
     break_minutes: int = Field(ge=0, default=60)
 
 

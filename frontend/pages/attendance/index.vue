@@ -216,6 +216,10 @@ async function submitPastRecord() {
     modalError.value = "出勤・退勤時刻を入力してください"
     return
   }
+  if (!modalWorkType.value) {
+    modalError.value = "出社形態を選択してください"
+    return
+  }
   modalLoading.value = true
   try {
     const clockInIso = toIsoJst(modalDate.value, modalClockIn.value)
@@ -223,7 +227,7 @@ async function submitPastRecord() {
       modalDate.value,
       clockInIso,
       toIsoJstClockOut(modalDate.value, modalClockOut.value, clockInIso),
-      modalWorkType.value ? (modalWorkType.value as WorkType) : null,
+      modalWorkType.value as WorkType,
       modalBreak.value,
     )
     modalOpen.value = false
@@ -440,7 +444,7 @@ const { roleTheme } = useRoleTheme()
         <div class="space-y-4">
           <!-- 出社形態 -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">出社形態</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">出社形態 <span class="text-red-500">*</span></label>
             <div class="flex gap-2">
               <UButton
                 size="sm"

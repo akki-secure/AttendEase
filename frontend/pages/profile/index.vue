@@ -126,7 +126,7 @@ const emailError = computed(() => {
 const newPasswordError = computed(() => {
   if (!newPassword.value) return null
   if (newPassword.value.length < 8) return "8文字以上で入力してください"
-  if (!ASCII_ONLY.test(newPassword.value)) return "英数字・記号（ASCII）のみ使用できます"
+  if (!ASCII_ONLY.test(newPassword.value)) return "半角英数字・大文字英語・記号のみ使用できます"
   return null
 })
 
@@ -255,7 +255,7 @@ const { roleTheme } = useRoleTheme()
                 <input
                   v-model="newPassword"
                   :type="showNewPassword ? 'text' : 'password'"
-                  placeholder="8文字以上・英数字記号のみ"
+                  placeholder="半角英数字・大文字英語・記号のみ（8文字以上）"
                   class="w-full bg-white border rounded-lg px-4 py-3 pr-11 text-sm focus:outline-none focus:ring-2"
                   :class="newPasswordError ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-brand-400'"
                 />

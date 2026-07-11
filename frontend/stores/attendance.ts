@@ -140,7 +140,7 @@ export const useAttendanceStore = defineStore("attendance", () => {
     date: string,
     clockIn: string,
     clockOut: string,
-    workType: WorkType | null,
+    workType: WorkType,
     breakMinutes: number,
   ): Promise<AttendanceRecord> {
     return $fetch<AttendanceRecord>(
