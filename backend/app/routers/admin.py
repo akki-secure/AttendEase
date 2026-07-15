@@ -6,10 +6,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_db, require_admin
 from app.core.security import get_password_hash
+from app.models.geofence_setting import GeofenceSetting
 from app.models.leave_balance import LeaveBalance
+from app.models.office_location import OfficeLocation
 from app.models.user import User
 from app.schemas.auth import UserCreateRequest, UserResponse
 from app.schemas.leave import LeaveBalanceResponse, LeaveBalanceUpdateRequest
+from app.schemas.location import (
+    GeofenceSettingResponse,
+    GeofenceSettingUpdateRequest,
+    LocationCreateRequest,
+    LocationResponse,
+    LocationUpdateRequest,
+)
 
 router = APIRouter()
 
@@ -135,3 +144,96 @@ async def update_leave_balance(
         used_days=balance.used_days,
         remaining_days=balance.granted_days - balance.used_days,
     )
+
+
+@router.get("/locations", response_model=list[LocationResponse])
+async def get_locations(
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_admin),
+) -> list[LocationResponse]:
+    result = await db.execute(select(OfficeLocation).order_by(OfficeLocation.id))
+    return list(result.scalars().all())
+
+
+@router.post("/locations", response_model=LocationResponse, status_code=status.HTTP_201_CREATED)
+async def create_location(
+    payload: LocationCreateRequest,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_admin),
+) -> LocationResponse:
+    location = OfficeLocation(
+        name=payload.name,
+        latitude=payload.latitude,
+        longitude=payload.longitude,
+        radius_meters=payload.radius_meters,
+        is_active=payload.is_active,
+    )
+    db.add(location)
+    await db.commit()
+    await db.refresh(location)
+    return location
+
+
+@router.put("/locations/{location_id}", response_model=LocationResponse)
+async def update_location(
+    location_id: int,
+    payload: LocationUpdateRequest,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_admin),
+) -> LocationResponse:
+    result = await db.execute(select(OfficeLocation).where(OfficeLocation.id == location_id))
+    location = result.scalar_one_or_none()
+    if location is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="拠点が見つかりません")
+
+    location.name = payload.name
+    location.latitude = payload.latitude
+    location.longitude = payload.longitude
+    location.radius_meters = payload.radius_meters
+    location.is_active = payload.is_active
+    await db.commit()
+    await db.refresh(location)
+    return location
+
+
+@router.delete("/locations/{location_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_location(
+    location_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_admin),
+) -> None:
+    result = await db.execute(select(OfficeLocation).where(OfficeLocation.id == location_id))
+    location = result.scalar_one_or_none()
+    if location is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="拠点が見つかりません")
+
+    await db.delete(location)
+    await db.commit()
+
+
+@router.get("/geofence-settings", response_model=GeofenceSettingResponse)
+async def get_geofence_settings(
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_admin),
+) -> GeofenceSettingResponse:
+    result = await db.execute(select(GeofenceSetting))
+    setting = result.scalars().first()
+    return GeofenceSettingResponse(enabled=setting.enabled if setting else False)
+
+
+@router.put("/geofence-settings", response_model=GeofenceSettingResponse)
+async def update_geofence_settings(
+    payload: GeofenceSettingUpdateRequest,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_admin),
+) -> GeofenceSettingResponse:
+    result = await db.execute(select(GeofenceSetting))
+    setting = result.scalars().first()
+    if setting is None:
+        setting = GeofenceSetting(enabled=payload.enabled)
+        db.add(setting)
+    else:
+        setting.enabled = payload.enabled
+    await db.commit()
+    await db.refresh(setting)
+    return GeofenceSettingResponse(enabled=setting.enabled)
