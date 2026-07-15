@@ -39,10 +39,14 @@ class TodayStatusResponse(BaseModel):
 class ClockInRequest(BaseModel):
     clock_in: datetime | None = None  # None のときサーバー現在時刻を使用
     work_type: Optional[Literal["office", "remote"]] = None
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
 
 
 class ClockOutRequest(BaseModel):
     clock_out: datetime | None = None  # None のときサーバー現在時刻を使用
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
 
 
 class FixClockInRequest(BaseModel):

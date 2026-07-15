@@ -12,9 +12,12 @@ from sqlalchemy.orm import selectinload
 from app.core.background import send_emails_background
 from app.core.deps import get_current_user, get_db, require_manager_or_admin
 from app.core.email import send_correction_request_email, send_correction_reviewed_email
+from app.core.geo import is_within_any_location
 from app.core.time import legal_break_minutes, round_down_overtime_minutes
 from app.models.attendance import AttendanceRecord
+from app.models.geofence_setting import GeofenceSetting
 from app.models.notification import Notification
+from app.models.office_location import OfficeLocation
 from app.models.user import User
 from app.schemas.attendance import (
     AttendanceResponse,
@@ -75,6 +78,28 @@ def _to_correction_response(record: AttendanceRecord) -> CorrectionRequestRespon
     return CorrectionRequestResponse(user_name=record.user.name, **base.model_dump())
 
 
+async def _check_geofence(db: AsyncSession, lat: float | None, lon: float | None) -> None:
+    setting = (await db.execute(select(GeofenceSetting))).scalars().first()
+    if setting is None or not setting.enabled:
+        return  # 機能OFF = 制限なし
+
+    result = await db.execute(select(OfficeLocation).where(OfficeLocation.is_active.is_(True)))
+    locations = result.scalars().all()
+    if not locations:
+        return  # 拠点未登録 = 制限なし
+
+    if lat is None or lon is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="位置情報が取得できませんでした。位置情報の利用を許可してください",
+        )
+    if not is_within_any_location(lat, lon, locations):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="登録された拠点の範囲外です。拠点内で打刻してください",
+        )
+
+
 async def _get_today_record(
     db: AsyncSession, user_id: int, today: date
 ) -> AttendanceRecord | None:
@@ -118,6 +143,8 @@ async def clock_in(
             status_code=status.HTTP_409_CONFLICT,
             detail="本日はすでに出勤打刻済みです",
         )
+
+    await _check_geofence(db, payload.latitude, payload.longitude)
 
     record = AttendanceRecord(
         user_id=current_user.id,
@@ -165,6 +192,8 @@ async def clock_out(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="退勤時刻は出勤時刻より後にしてください",
         )
+
+    await _check_geofence(db, payload.latitude, payload.longitude)
 
     total_minutes = int((clock_out_dt - _ensure_utc(record.clock_in)).total_seconds() // 60)
     record.clock_out = clock_out_dt
