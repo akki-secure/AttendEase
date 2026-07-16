@@ -162,9 +162,26 @@ function fmtMinutes(min: number) {
   return h > 0 ? `${h}時間${m}分` : `${m}分`
 }
 
+// ジオフェンス判定用に現在地を取得（取得できない場合はundefinedのまま送信し、
+// 機能OFF/拠点未登録ならサーバー側で無視される）
+function getCoords(): Promise<{ latitude: number; longitude: number } | undefined> {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve(undefined)
+      return
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+      () => resolve(undefined),
+      { enableHighAccuracy: true, timeout: 8000 },
+    )
+  })
+}
+
 async function handleClockIn() {
   try {
-    await attendanceStore.clockIn(toIso(clockInTime.value), workType.value)
+    const coords = await getCoords()
+    await attendanceStore.clockIn(toIso(clockInTime.value), workType.value, coords)
     const typeLabel = workType.value === "office" ? "出社" : "リモートワーク"
     toast.add({ title: `${clockInTime.value} に出勤打刻しました（${typeLabel}）`, color: "green", icon: "i-heroicons-check-circle" })
   } catch {
@@ -174,7 +191,8 @@ async function handleClockIn() {
 
 async function handleClockOut() {
   try {
-    await attendanceStore.clockOut(toIsoClockOut(clockOutTime.value, attendanceStore.today?.record?.clock_in))
+    const coords = await getCoords()
+    await attendanceStore.clockOut(toIsoClockOut(clockOutTime.value, attendanceStore.today?.record?.clock_in), coords)
     toast.add({ title: `${clockOutTime.value} に退勤打刻しました`, color: "blue", icon: "i-heroicons-check-circle" })
   } catch {
     toast.add({ title: attendanceStore.error ?? "エラーが発生しました", color: "red", icon: "i-heroicons-exclamation-circle" })
@@ -675,6 +693,9 @@ color="amber" size="sm" icon="i-heroicons-paper-airplane"
           </UButton>
           <UButton color="amber" variant="outline" icon="i-heroicons-calendar-days" to="/admin/leave-balances">
             有給残日数管理
+          </UButton>
+          <UButton color="amber" variant="outline" icon="i-heroicons-map-pin" to="/admin/locations">
+            拠点・ジオフェンス管理
           </UButton>
         </div>
       </div>
