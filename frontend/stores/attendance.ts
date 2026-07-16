@@ -30,13 +30,21 @@ export const useAttendanceStore = defineStore("attendance", () => {
     }
   }
 
-  async function clockIn(clockInIso?: string, workType?: WorkType): Promise<AttendanceRecord> {
+  async function clockIn(
+    clockInIso?: string,
+    workType?: WorkType,
+    coords?: { latitude: number; longitude: number },
+  ): Promise<AttendanceRecord> {
     isLoading.value = true
     error.value = null
     try {
       const body: Record<string, unknown> = {}
       if (clockInIso) body.clock_in = clockInIso
       if (workType) body.work_type = workType
+      if (coords) {
+        body.latitude = coords.latitude
+        body.longitude = coords.longitude
+      }
       const record = await $fetch<AttendanceRecord>(
         `${apiBase}/api/v1/attendance/clock-in`,
         { method: "POST", headers: authHeaders(), body },
@@ -51,11 +59,18 @@ export const useAttendanceStore = defineStore("attendance", () => {
     }
   }
 
-  async function clockOut(clockOutIso?: string): Promise<AttendanceRecord> {
+  async function clockOut(
+    clockOutIso?: string,
+    coords?: { latitude: number; longitude: number },
+  ): Promise<AttendanceRecord> {
     isLoading.value = true
     error.value = null
     try {
-      const body = clockOutIso ? { clock_out: clockOutIso } : {}
+      const body: Record<string, unknown> = clockOutIso ? { clock_out: clockOutIso } : {}
+      if (coords) {
+        body.latitude = coords.latitude
+        body.longitude = coords.longitude
+      }
       const record = await $fetch<AttendanceRecord>(
         `${apiBase}/api/v1/attendance/clock-out`,
         { method: "POST", headers: authHeaders(), body },
