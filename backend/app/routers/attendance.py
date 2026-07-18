@@ -303,6 +303,7 @@ async def create_past_record(
     db: AsyncSession = Depends(get_db),
 ) -> AttendanceResponse:
     """当月の過去日付の打刻を直接登録する（承認不要）"""
+    await _reject_if_geofence_enabled(db)
     today_jst = datetime.now(_JST).date()
 
     if payload.date >= today_jst:
