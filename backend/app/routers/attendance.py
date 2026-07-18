@@ -80,6 +80,21 @@ def _to_correction_response(record: AttendanceRecord) -> CorrectionRequestRespon
     return CorrectionRequestResponse(user_name=record.user.name, **base.model_dump())
 
 
+async def _reject_if_geofence_enabled(db: AsyncSession) -> None:
+    """ジオフェンス機能が有効な間は、位置情報の再検証を伴わない打刻修正を禁止する。
+
+    fix_today_clock_in/out・修正申請は自己申告で時刻を書き換えられるため、
+    ジオフェンスON中にこれを許すと「拠点内で打刻→修正で時刻だけ書き換え」で
+    検証済みバッジだけが残る抜け道になる。
+    """
+    setting = (await db.execute(select(GeofenceSetting))).scalars().first()
+    if setting is not None and setting.enabled:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="ジオフェンス機能が有効な間は打刻修正できません",
+        )
+
+
 async def _check_geofence(db: AsyncSession, lat: float | None, lon: float | None) -> bool:
     """ジオフェンス判定を行い、実際に位置情報で拠点内と検証できた場合はTrueを返す。
 
@@ -220,6 +235,7 @@ async def fix_today_clock_in(
     db: AsyncSession = Depends(get_db),
 ) -> AttendanceResponse:
     """出勤中のみ: 本日の出勤時刻を直接修正する（承認不要）"""
+    await _reject_if_geofence_enabled(db)
     today = datetime.now(_JST).date()
     record = await _get_today_record(db, current_user.id, today)
     if record is None:
@@ -255,6 +271,7 @@ async def fix_today_clock_out(
     db: AsyncSession = Depends(get_db),
 ) -> AttendanceResponse:
     """退勤済みのみ: 本日の退勤時刻を直接修正する（当日のみ承認不要）"""
+    await _reject_if_geofence_enabled(db)
     today = datetime.now(_JST).date()
     record = await _get_today_record(db, current_user.id, today)
     if record is None:
@@ -428,6 +445,7 @@ async def request_correction(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> AttendanceResponse:
+    await _reject_if_geofence_enabled(db)
     result = await db.execute(
         select(AttendanceRecord)
         .options(selectinload(AttendanceRecord.user))
