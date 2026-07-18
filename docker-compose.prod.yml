@@ -15,8 +15,9 @@ services:
         # EC2では .env で NUXT_SSR=false にしてhairpin NAT問題を回避する（PR #11参照）
         NUXT_SSR: ${NUXT_SSR:-true}
     environment:
-      # nginxが/apiを同一オリジンでbackendにプロキシするため相対パスでよい
-      NUXT_PUBLIC_API_BASE: ${NUXT_PUBLIC_API_BASE:-/api}
+      # フロントエンドのAPI呼び出しは "${apiBase}/api/v1/..." という形式のため、
+      # apiBase自体は空（同一オリジン）にする。nginxが/apiをbackendへプロキシする。
+      NUXT_PUBLIC_API_BASE: ${NUXT_PUBLIC_API_BASE:-}
       NUXT_SSR: ${NUXT_SSR:-true}
     depends_on:
       - backend
