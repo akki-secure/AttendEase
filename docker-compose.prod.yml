@@ -1,8 +1,6 @@
 services:
   backend:
     build: ./backend
-    ports:
-      - "8000:8000"
     volumes:
       - sqlite_data:/app/data
     env_file: .env
@@ -16,14 +14,38 @@ services:
       args:
         # EC2では .env で NUXT_SSR=false にしてhairpin NAT問題を回避する（PR #11参照）
         NUXT_SSR: ${NUXT_SSR:-true}
-    ports:
-      - "3000:3000"
     environment:
-      NUXT_PUBLIC_API_BASE: ${NUXT_PUBLIC_API_BASE:-http://13.239.31.224:8000}
+      # nginxが/apiを同一オリジンでbackendにプロキシするため相対パスでよい
+      NUXT_PUBLIC_API_BASE: ${NUXT_PUBLIC_API_BASE:-/api}
       NUXT_SSR: ${NUXT_SSR:-true}
     depends_on:
       - backend
     restart: unless-stopped
 
+  nginx:
+    image: nginx:alpine
+    volumes:
+      - ./nginx/templates:/etc/nginx/templates:ro
+      - certbot_www:/var/www/certbot:ro
+      - certbot_conf:/etc/letsencrypt:ro
+    environment:
+      DOMAIN: ${DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+      - frontend
+    restart: unless-stopped
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - certbot_www:/var/www/certbot
+      - certbot_conf:/etc/letsencrypt
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
 volumes:
   sqlite_data:
+  certbot_www:
+  certbot_conf:
