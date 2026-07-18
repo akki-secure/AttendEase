@@ -12,7 +12,7 @@ COMPOSE="docker compose -f docker-compose.prod.yml"
 VOLUME="attendease_certbot_conf"
 
 echo "### ダミー証明書を作成してnginxを起動できるようにする ###"
-docker run --rm -v "$VOLUME:/etc/letsencrypt" alpine/openssl sh -c "
+docker run --rm -v "$VOLUME:/etc/letsencrypt" --entrypoint sh alpine/openssl -c "
   mkdir -p /etc/letsencrypt/live/$DOMAIN && \
   openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
     -keyout /etc/letsencrypt/live/$DOMAIN/privkey.pem \
