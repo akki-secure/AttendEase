@@ -67,6 +67,8 @@ def _to_response(record: AttendanceRecord) -> AttendanceResponse:
         work_type=record.work_type,
         correction_note=record.correction_note,
         work_minutes=work_minutes,
+        clock_in_geofence_verified=record.clock_in_geofence_verified,
+        clock_out_geofence_verified=record.clock_out_geofence_verified,
         reviewer_id=record.reviewer_id,
         reviewer_comment=record.reviewer_comment,
         reviewed_at=_ensure_utc(record.reviewed_at),
@@ -78,15 +80,19 @@ def _to_correction_response(record: AttendanceRecord) -> CorrectionRequestRespon
     return CorrectionRequestResponse(user_name=record.user.name, **base.model_dump())
 
 
-async def _check_geofence(db: AsyncSession, lat: float | None, lon: float | None) -> None:
+async def _check_geofence(db: AsyncSession, lat: float | None, lon: float | None) -> bool:
+    """ジオフェンス判定を行い、実際に位置情報で拠点内と検証できた場合はTrueを返す。
+
+    機能OFF・拠点未登録の場合は制限なしでFalseを返す（＝ジオフェンスは使われていない）。
+    """
     setting = (await db.execute(select(GeofenceSetting))).scalars().first()
     if setting is None or not setting.enabled:
-        return  # 機能OFF = 制限なし
+        return False  # 機能OFF = 制限なし
 
     result = await db.execute(select(OfficeLocation).where(OfficeLocation.is_active.is_(True)))
     locations = result.scalars().all()
     if not locations:
-        return  # 拠点未登録 = 制限なし
+        return False  # 拠点未登録 = 制限なし
 
     if lat is None or lon is None:
         raise HTTPException(
@@ -98,6 +104,7 @@ async def _check_geofence(db: AsyncSession, lat: float | None, lon: float | None
             status_code=status.HTTP_403_FORBIDDEN,
             detail="登録された拠点の範囲外です。拠点内で打刻してください",
         )
+    return True
 
 
 async def _get_today_record(
@@ -144,7 +151,7 @@ async def clock_in(
             detail="本日はすでに出勤打刻済みです",
         )
 
-    await _check_geofence(db, payload.latitude, payload.longitude)
+    geofence_verified = await _check_geofence(db, payload.latitude, payload.longitude)
 
     record = AttendanceRecord(
         user_id=current_user.id,
@@ -152,6 +159,7 @@ async def clock_in(
         clock_in=clock_in_dt,
         work_type=payload.work_type,
         status="PRESENT",
+        clock_in_geofence_verified=geofence_verified,
     )
     db.add(record)
     await db.commit()
@@ -193,12 +201,13 @@ async def clock_out(
             detail="退勤時刻は出勤時刻より後にしてください",
         )
 
-    await _check_geofence(db, payload.latitude, payload.longitude)
+    geofence_verified = await _check_geofence(db, payload.latitude, payload.longitude)
 
     total_minutes = int((clock_out_dt - _ensure_utc(record.clock_in)).total_seconds() // 60)
     record.clock_out = clock_out_dt
     record.break_minutes = legal_break_minutes(total_minutes)
     record.status = "CLOSED"
+    record.clock_out_geofence_verified = geofence_verified
     await db.commit()
     await db.refresh(record)
     return _to_response(record)

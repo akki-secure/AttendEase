@@ -18,6 +18,8 @@ export interface AttendanceRecord {
   work_type: WorkType | null
   correction_note: string | null
   work_minutes: number | null
+  clock_in_geofence_verified: boolean
+  clock_out_geofence_verified: boolean
   reviewer_id: number | null
   reviewer_comment: string | null
   reviewed_at: string | null

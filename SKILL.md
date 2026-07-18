@@ -37,6 +37,23 @@ Docker Composeでは `frontend/node_modules` と `frontend/.nuxt` を anonymous 
 `docker run -v <ホストパス>:/app ...` のようにホストディレクトリを直接bind mountしてコンテナ内(root)でファイル/ディレクトリを新規作成すると、Docker DesktopのファイルシステムがホストのACLに `deny delete` を付与し、ホスト側ユーザーが `rm`/`rmdir` できなくなることがある。
 **対応**: `chmod -N <path>` でACLをクリアしてから削除する。
 
+### 5. フロントエンドの品質チェックはコンテナ内で動かない
+frontendコンテナのNode.jsバージョンが古く(`Object.groupBy is not a function`)、`eslint`・`vue-tsc`がコンテナ内では実行できない。**ホスト側のNode(v25系)で `npx eslint <path>` / `npx vue-tsc --noEmit` を実行すること。**
+
+### 6. バックエンドのpytestはrequirements.txtに含まれない
+`backend/requirements.txt`にはpytest等のテスト依存が含まれておらず、`tests/`配下にテストは存在するのに稼働中のbackendコンテナには入っていない。テスト実行時は都度 `docker exec attendease-backend-1 pip install --no-cache-dir pytest pytest-asyncio httpx` してから `python -m pytest -q` する(requirements.txtには追加しない運用)。
+
+### 7. docker composeの`${VAR:-default}`は空文字も「未設定」扱い
+`.env`で `NUXT_PUBLIC_API_BASE=`(空文字)と書いても、compose側が `${NUXT_PUBLIC_API_BASE:-/api}` のようにコロン付きデフォルトを使っていると、空文字は「未設定」とみなされデフォルト値が適用されてしまう。空文字を明示的に使わせたい場合は、compose側のデフォルト自体を空(`${VAR:-}`)にする必要がある。
+
+## ジオフェンス機能のアーキテクチャ
+
+- 拠点管理: `backend/app/models/office_location.py`(`OfficeLocation`)、機能ON/OFF: `backend/app/models/geofence_setting.py`(`GeofenceSetting`、単一行）。管理API・画面ともADMIN限定(`Depends(require_admin)` / `frontend/middleware/admin.ts`、MANAGERは不可)。
+- 距離判定: `backend/app/core/geo.py` の `haversine_distance_meters` / `is_within_any_location`。
+- 打刻時の判定: `backend/app/routers/attendance.py` の `_check_geofence()`。機能OFFまたは有効拠点0件なら無条件で素通り、位置情報未取得なら422、範囲外なら403。
+- 打刻がジオフェンス判定を実際に通過したかどうかは `AttendanceRecord.clock_in_geofence_verified` / `clock_out_geofence_verified`(共にbool、マイグレーション`0016`)に保存され、`frontend/pages/attendance/index.vue` の勤怠一覧で「ジオフェンス」バッジとして表示される。
+- HTTPS化(nginx + Let's Encrypt、本README「本番環境（HTTPS化）」参照)が無いと、ブラウザのGeolocation APIが動作せず本番では機能しない。
+
 ## シードデータ・テストアカウント
 
 `backend/scripts/seed.py` で以下が作成される：
