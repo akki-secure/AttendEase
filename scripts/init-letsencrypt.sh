@@ -27,7 +27,7 @@ echo "### ダミー証明書を削除 ###"
 docker run --rm -v "$VOLUME:/etc/letsencrypt" alpine rm -rf "/etc/letsencrypt/live/$DOMAIN"
 
 echo "### 本番証明書を取得 ###"
-$COMPOSE run --rm certbot certonly --webroot -w /var/www/certbot \
+$COMPOSE run --rm --entrypoint certbot certbot certonly --webroot -w /var/www/certbot \
   -d "$DOMAIN" \
   --register-unsafely-without-email \
   --agree-tos --no-eff-email --force-renewal
