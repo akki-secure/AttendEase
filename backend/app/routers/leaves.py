@@ -82,7 +82,15 @@ async def create_leave(
             )
         )
     )
-    if overlap.scalar_one_or_none():
+    for existing in overlap.scalars():
+        # 遅刻・早退同士の組み合わせは時間帯が重ならないため、種別が異なれば両立を許可する。
+        # それ以外（同一種別の二重申請、終日型の休暇との重複）は従来通り拒否する。
+        if (
+            payload.leave_type in TIME_BASED_LEAVE_TYPES
+            and existing.leave_type in TIME_BASED_LEAVE_TYPES
+            and payload.leave_type != existing.leave_type
+        ):
+            continue
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="指定期間に既に申請済みの休暇があります",
