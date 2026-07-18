@@ -629,6 +629,7 @@ flowchart LR
     direction TB
     AdminUsers("👥 ユーザー管理\n/admin/users")
     AdminLeave("📋 有給残日数管理\n/admin/leave-balances")
+    AdminLocations("📍 拠点・ジオフェンス管理\n/admin/locations")
   end
 
   %% ─── 遷移 ────────────────────────────────────────────────
@@ -647,6 +648,7 @@ flowchart LR
   Dashboard -->|"MANAGER / ADMIN"| OTApprove
   Dashboard -->|"ADMIN"| AdminUsers
   Dashboard -->|"ADMIN"| AdminLeave
+  Dashboard -->|"ADMIN"| AdminLocations
 
   %% ─── スタイル ────────────────────────────────────────────
   classDef authStyle   fill:#dbeafe,stroke:#3b82f6,color:#1e3a8a,rx:8
@@ -748,6 +750,8 @@ erDiagram
     int break_minutes
     string status
     string work_type
+    bool clock_in_geofence_verified
+    bool clock_out_geofence_verified
     text correction_note
     datetime original_clock_in
     datetime original_clock_out
@@ -828,6 +832,23 @@ erDiagram
     datetime expires_at
     bool used
     datetime created_at
+  }
+
+  office_locations {
+    int id PK
+    string name
+    float latitude
+    float longitude
+    int radius_meters
+    bool is_active
+    datetime created_at
+    datetime updated_at
+  }
+
+  geofence_settings {
+    int id PK
+    bool enabled
+    datetime updated_at
   }
 
   users ||--o{ attendance_records : "打刻"
