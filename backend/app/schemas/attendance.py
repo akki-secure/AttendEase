@@ -15,6 +15,8 @@ class AttendanceResponse(BaseModel):
     work_type: Optional[str] = None
     correction_note: str | None
     work_minutes: int | None  # clock_out - clock_in - break_minutes（退勤後のみ）
+    clock_in_geofence_verified: bool = False
+    clock_out_geofence_verified: bool = False
     reviewer_id: int | None = None
     reviewer_comment: str | None = None
     reviewed_at: datetime | None = None

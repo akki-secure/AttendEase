@@ -456,6 +456,7 @@
 ## 機能
 
 - 出退勤打刻（修正申請あり）
+- ジオフェンス打刻制限（登録拠点の半径内でのみ打刻を許可、ADMINが拠点・ON/OFFを管理。位置情報取得はHTTPS環境が必須）
 - 休暇申請・承認ワークフロー（有給残日数管理）
 - 残業申請・承認ワークフロー（月次アラート）
 - レポート・CSV出力
@@ -479,7 +480,7 @@
 | フロントエンド | Vue 3 / Nuxt 3 / TypeScript / Tailwind CSS / Nuxt UI / Pinia |
 | バックエンド | FastAPI / SQLAlchemy 2.0 / Alembic / python-jose / Pydantic v2 |
 | データベース | SQLite 3 |
-| インフラ | Docker / Docker Compose / AWS EC2 (t3.micro) |
+| インフラ | Docker / Docker Compose / AWS EC2 (t3.micro) / nginx / Let's Encrypt (Certbot) / DuckDNS |
 
 ---
 
@@ -575,6 +576,20 @@ docker compose down --volumes --rmi all
 
 > [!WARNING]
 > `--volumes` を付けるとデータベースのデータも削除されます。再度 `alembic upgrade head` と `scripts.seed` の実行が必要です。
+
+---
+
+## 本番環境（HTTPS化）
+
+ジオフェンス機能はブラウザの Geolocation API を使用しており、セキュアコンテキスト（HTTPS、または `localhost`）でしか動作しない。そのため本番環境（AWS EC2）は以下の構成でHTTPS化している。
+
+- **DuckDNS**: 無料のダイナミックDNSでサブドメイン（例: `attendease2026.duckdns.org`）を取得し、EC2のパブリックIPに割り当て
+- **Elastic IP**: EC2再起動時にIPアドレスが変わらないよう固定IPを割り当て済み
+- **nginx**: リバースプロキシとして `/api/` 配下はbackend、それ以外はfrontendへ振り分け（`nginx/templates/default.conf.template`）。frontend/backendのポート（3000/8000）は外部に直接公開していない
+- **Let's Encrypt（Certbot）**: 無料のTLS証明書を取得・自動更新（`docker-compose.prod.yml` の `certbot` サービスが12時間ごとに更新を試行、有効期限90日）
+- 初回証明書発行は `scripts/init-letsencrypt.sh` を使用（`DOMAIN=xxx.duckdns.org ./scripts/init-letsencrypt.sh`）
+
+`NUXT_PUBLIC_API_BASE` は同一オリジン構成のため空文字（相対パス）で運用し、CORSも同一オリジンで完結する。
 
 ---
 

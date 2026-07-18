@@ -110,6 +110,7 @@ const tableRows = computed(() =>
       _work:      fmtMinutes(r.work_minutes),
       _overtime:  overtime != null && overtime > 0 ? fmtMinutes(overtime) : "--",
       _status:    statusMap[r.status] ?? { label: r.status, color: "gray" as const },
+      _geofenceUsed: r.clock_in_geofence_verified || r.clock_out_geofence_verified,
     }
   })
 )
@@ -418,9 +419,15 @@ const { roleTheme } = useRoleTheme()
                 <td class="px-4 py-3 font-mono font-semibold text-gray-700">{{ row._work }}</td>
                 <td class="px-4 py-3 font-mono" :class="row._overtime !== '--' ? 'text-orange-600 font-semibold' : 'text-gray-400'">{{ row._overtime }}</td>
                 <td class="px-4 py-3">
-                  <UBadge :color="row._status.color" variant="subtle" size="xs">
-                    {{ row._status.label }}
-                  </UBadge>
+                  <div class="flex items-center gap-1">
+                    <UBadge :color="row._status.color" variant="subtle" size="xs">
+                      {{ row._status.label }}
+                    </UBadge>
+                    <UBadge v-if="row._geofenceUsed" color="purple" variant="subtle" size="xs">
+                      <UIcon name="i-heroicons-map-pin" class="w-3 h-3" />
+                      ジオフェンス
+                    </UBadge>
+                  </div>
                 </td>
               </tr>
             </tbody>

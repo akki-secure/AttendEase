@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from sqlalchemy import Date, DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -18,6 +18,9 @@ class AttendanceRecord(Base):
     # PRESENT / CLOSED / CORRECTION_PENDING / CORRECTION_APPROVED
     status: Mapped[str] = mapped_column(String(30), nullable=False, default="PRESENT")
     work_type: Mapped[str | None] = mapped_column(String(10), nullable=True)  # "office" / "remote"
+    # ジオフェンス機能が有効な状態で、位置情報により拠点内と判定された打刻かどうか
+    clock_in_geofence_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    clock_out_geofence_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     correction_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     original_clock_in: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     original_clock_out: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
