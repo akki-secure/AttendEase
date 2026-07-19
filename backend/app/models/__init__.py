@@ -1,3 +1,4 @@
+from app.models.account_unlock_log import AccountUnlockLog  # noqa: F401
 from app.models.attendance import AttendanceRecord  # noqa: F401
 from app.models.geofence_setting import GeofenceSetting  # noqa: F401
 from app.models.leave import LeaveRequest  # noqa: F401

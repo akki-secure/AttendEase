@@ -3,14 +3,16 @@ from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.deps import get_db, require_admin
 from app.core.security import get_password_hash
+from app.models.account_unlock_log import AccountUnlockLog
 from app.models.geofence_setting import GeofenceSetting
 from app.models.leave_balance import LeaveBalance
 from app.models.office_location import OfficeLocation
 from app.models.user import User
-from app.schemas.auth import AdminUserListItem, UserCreateRequest, UserResponse
+from app.schemas.auth import AccountUnlockLogItem, AdminUserListItem, UserCreateRequest, UserResponse
 from app.schemas.leave import LeaveBalanceResponse, LeaveBalanceUpdateRequest
 from app.schemas.location import (
     GeofenceSettingResponse,
@@ -101,7 +103,7 @@ async def list_users(
 async def unlock_user(
     user_id: int,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_admin),
+    admin_user: User = Depends(require_admin),
 ) -> AdminUserListItem:
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
@@ -109,10 +111,38 @@ async def unlock_user(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="ユーザーが見つかりません")
 
     user.failed_login_count = 0
+    db.add(AccountUnlockLog(user_id=user.id, unlocked_by_id=admin_user.id))
     await db.commit()
     await db.refresh(user)
 
     return _to_admin_user_list_item(user)
+
+
+@router.get("/users/{user_id}/unlock-logs", response_model=list[AccountUnlockLogItem])
+async def list_unlock_logs(
+    user_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_admin),
+) -> list[AccountUnlockLogItem]:
+    user_exists = await db.execute(select(User.id).where(User.id == user_id))
+    if user_exists.scalar_one_or_none() is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="ユーザーが見つかりません")
+
+    result = await db.execute(
+        select(AccountUnlockLog)
+        .options(selectinload(AccountUnlockLog.unlocked_by))
+        .where(AccountUnlockLog.user_id == user_id)
+        .order_by(AccountUnlockLog.created_at.desc())
+    )
+    return [
+        AccountUnlockLogItem(
+            id=log.id,
+            unlocked_by_employee_id=log.unlocked_by.employee_id,
+            unlocked_by_name=log.unlocked_by.name,
+            created_at=log.created_at,
+        )
+        for log in result.scalars().all()
+    ]
 
 
 @router.get("/leave-balances", response_model=list[LeaveBalanceResponse])

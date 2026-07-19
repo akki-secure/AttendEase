@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, EmailStr, field_validator
 
 from app.core.security import ASCII_ONLY
@@ -75,6 +77,13 @@ class AdminUserListItem(BaseModel):
     is_active: bool
     email: str | None = None
     is_locked: bool
+
+
+class AccountUnlockLogItem(BaseModel):
+    id: int
+    unlocked_by_employee_id: str
+    unlocked_by_name: str
+    created_at: datetime
 
 
 class PasswordResetRequestSchema(BaseModel):

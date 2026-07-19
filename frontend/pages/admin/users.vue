@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { AdminUserListItem } from "~/types/auth"
+import type { AccountUnlockLogItem, AdminUserListItem } from "~/types/auth"
 
 definePageMeta({
   middleware: "admin",
@@ -76,6 +76,43 @@ await fetchUsers()
 watch(successMessage, (msg) => {
   if (msg) fetchUsers()
 })
+
+// ─── ロック解除履歴モーダル ─────────────────────────────
+const historyModalOpen = ref(false)
+const historyTargetUser = ref<AdminUserListItem | null>(null)
+const unlockLogs = ref<AccountUnlockLogItem[]>([])
+const isLoadingHistory = ref(false)
+const historyError = ref<string | null>(null)
+let historyRequestId = 0
+
+async function openHistoryModal(user: AdminUserListItem) {
+  const requestId = ++historyRequestId
+  historyTargetUser.value = user
+  historyModalOpen.value = true
+  isLoadingHistory.value = true
+  historyError.value = null
+  try {
+    const logs = await $fetch<AccountUnlockLogItem[]>(
+      `${apiBase}/api/v1/admin/users/${user.id}/unlock-logs`,
+      { headers: authHeaders() },
+    )
+    if (requestId !== historyRequestId) return
+    unlockLogs.value = logs
+  } catch (err: unknown) {
+    if (requestId !== historyRequestId) return
+    const e = err as { data?: { detail?: string } }
+    historyError.value = e?.data?.detail ?? "解除履歴の取得に失敗しました"
+  } finally {
+    if (requestId !== historyRequestId) return
+    isLoadingHistory.value = false
+  }
+}
+
+function formatDateTime(value: string) {
+  // バックエンドはタイムゾーンなしのUTC文字列を返すため、'Z'を付与してローカル時刻扱いを防ぐ
+  const utc = /[Z+]/.test(value) ? value : value + "Z"
+  return new Date(utc).toLocaleString("ja-JP")
+}
 </script>
 
 <template>
@@ -140,18 +177,29 @@ watch(successMessage, (msg) => {
                     </UBadge>
                   </td>
                   <td class="px-4 py-3">
-                    <UButton
-                      v-if="u.is_locked"
-                      color="red"
-                      variant="ghost"
-                      size="xs"
-                      icon="i-heroicons-lock-open"
-                      :loading="unlockingId === u.id"
-                      :disabled="unlockingId === u.id"
-                      @click="unlockUser(u)"
-                    >
-                      ロック解除
-                    </UButton>
+                    <div class="flex gap-2">
+                      <UButton
+                        v-if="u.is_locked"
+                        color="red"
+                        variant="ghost"
+                        size="xs"
+                        icon="i-heroicons-lock-open"
+                        :loading="unlockingId === u.id"
+                        :disabled="unlockingId === u.id"
+                        @click="unlockUser(u)"
+                      >
+                        ロック解除
+                      </UButton>
+                      <UButton
+                        color="gray"
+                        variant="ghost"
+                        size="xs"
+                        icon="i-heroicons-clock"
+                        @click="openHistoryModal(u)"
+                      >
+                        履歴
+                      </UButton>
+                    </div>
                   </td>
                 </tr>
               </tbody>
@@ -264,5 +312,47 @@ watch(successMessage, (msg) => {
         </form>
       </UCard>
     </main>
+
+    <!-- ロック解除履歴モーダル -->
+    <UModal v-model="historyModalOpen">
+      <UCard>
+        <template #header>
+          <div class="flex items-center gap-2">
+            <UIcon name="i-heroicons-clock" class="w-5 h-5 text-primary-500" />
+            <span class="font-semibold text-gray-800">
+              {{ historyTargetUser?.name }}（{{ historyTargetUser?.employee_id }}）のロック解除履歴
+            </span>
+          </div>
+        </template>
+
+        <div v-if="isLoadingHistory" class="flex items-center justify-center py-8">
+          <UIcon name="i-heroicons-arrow-path" class="w-6 h-6 text-gray-400 animate-spin" />
+        </div>
+        <UAlert
+          v-else-if="historyError"
+          color="red"
+          variant="soft"
+          icon="i-heroicons-exclamation-circle"
+          :description="historyError"
+        />
+        <p v-else-if="unlockLogs.length === 0" class="text-sm text-gray-400 text-center py-8">
+          解除履歴はありません
+        </p>
+        <ul v-else class="divide-y divide-gray-100">
+          <li v-for="log in unlockLogs" :key="log.id" class="py-3 text-sm">
+            <p class="text-gray-700">{{ formatDateTime(log.created_at) }}</p>
+            <p class="text-gray-500 text-xs mt-0.5">
+              解除実行者: {{ log.unlocked_by_name }}（{{ log.unlocked_by_employee_id }}）
+            </p>
+          </li>
+        </ul>
+
+        <template #footer>
+          <div class="flex justify-end">
+            <UButton color="gray" variant="outline" @click="historyModalOpen = false">閉じる</UButton>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
   </div>
 </template>
