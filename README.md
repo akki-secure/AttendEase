@@ -231,91 +231,25 @@
 22.一般社員:ジオフェンス機能ONでの場合、勤怠一覧で、「状態」は「ジオフェンス」として確認することができます。
 
 
-
-
-
-
-
-
 <img width="1277" height="183" alt="スクリーンショット 2026-07-18 11 44 30" src="https://github.com/user-attachments/assets/02f4ffab-f957-416f-b257-36fb1a577bdc" />
-
-
 
 
 23.システム管理者：一般社員などのユーザーが社員ログインで、「アカウントロック」→「ユーザー一覧」をクリックして、「ロック」と表記されたユーザーを探して、項目の「操作」にある「ロック解除」をクリックすると、アカウントロックが解除されます。
 
 
-
-
-
-
-
 <img width="918" height="479" alt="スクリーンショット 2026-07-19 9 43 04" src="https://github.com/user-attachments/assets/a4d9f38e-3fb9-4145-a001-f7f554792750" />
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 <img width="918" height="479" alt="スクリーンショット 2026-07-19 9 43 17" src="https://github.com/user-attachments/assets/74145c32-8eb0-4a53-bfce-c7fa49683ea7" />
 
 
-
-
-
-
-
-
-
-
-
 24.システム管理者:ユーザー一覧の操作項目の「履歴」で確認でき、アカウントロックの解除の時だけ操作の不正防止を防ぐ為に、監査ログとして「いつ、誰が、何を」 というログを残せるようにしています。
-
-
-
-
-
-
-
-
-
-
 
 
 <img width="918" height="62" alt="スクリーンショット 2026-07-19 13 09 18" src="https://github.com/user-attachments/assets/0d57b943-24ac-4389-82c4-ab83d64faef7" />
 
 
-
-
-
-
-
-
-
 <img width="515" height="233" alt="スクリーンショット 2026-07-19 13 09 41" src="https://github.com/user-attachments/assets/e71ba0af-4350-48b8-ac04-835935f00a86" />
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 ---
@@ -324,6 +258,7 @@
 
 - 出退勤打刻（修正申請あり）
 - ジオフェンス打刻制限（登録拠点の半径内でのみ打刻を許可、ADMINが拠点・ON/OFFを管理。位置情報取得はHTTPS環境が必須）
+- アカウントロック解除・監査ログ（ログイン失敗が続くとロックされたアカウントをADMINが解除可能。「いつ・誰が」解除したかの履歴を記録）
 - 休暇申請・承認ワークフロー（有給残日数管理）
 - 残業申請・承認ワークフロー（月次アラート）
 - レポート・CSV出力
@@ -494,7 +429,7 @@ flowchart LR
   %% ─── 管理者専用 ───────────────────────────────────────────
   subgraph ADMIN["🛡️  ADMIN 限定"]
     direction TB
-    AdminUsers("👥 ユーザー管理\n/admin/users\n（アカウントロック解除）")
+    AdminUsers("👥 ユーザー管理\n/admin/users\n（アカウントロック解除・監査ログ）")
     AdminLeave("📋 有給残日数管理\n/admin/leave-balances")
     AdminLocations("📍 拠点・ジオフェンス管理\n/admin/locations")
   end
@@ -718,6 +653,13 @@ erDiagram
     datetime updated_at
   }
 
+  account_unlock_logs {
+    int id PK
+    int user_id FK
+    int unlocked_by_id FK
+    datetime created_at
+  }
+
   users ||--o{ attendance_records : "打刻"
   users ||--o{ leave_requests : "申請"
   users ||--o{ overtime_requests : "申請"
@@ -726,6 +668,8 @@ erDiagram
   users ||--o{ leave_requests : "承認"
   users ||--o{ overtime_requests : "承認"
   users ||--o{ attendance_records : "打刻修正承認"
+  users ||--o{ account_unlock_logs : "ロック解除対象"
+  users ||--o{ account_unlock_logs : "ロック解除実行者"
 ```
 
 ---
