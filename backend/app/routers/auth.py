@@ -30,7 +30,6 @@ router = APIRouter()
 
 _ERROR_MSG = "社員IDまたはパスワードが正しくありません"
 _LOCK_MSG = "アカウントがロックされています。管理者にお問い合わせください。"
-_MAX_FAILED_ATTEMPTS = 3
 _INITIAL_ANNUAL_LEAVE_DAYS = 3
 
 
@@ -97,13 +96,13 @@ async def pre_check(payload: PreCheckRequest, db: AsyncSession = Depends(get_db)
         dummy_verify()
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=_ERROR_MSG)
 
-    if user.failed_login_count >= _MAX_FAILED_ATTEMPTS:
+    if user.is_locked:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=_LOCK_MSG)
 
     if not verify_password(payload.password, user.hashed_password):
         user.failed_login_count += 1
         await db.commit()
-        remaining = _MAX_FAILED_ATTEMPTS - user.failed_login_count
+        remaining = User.MAX_FAILED_LOGIN_ATTEMPTS - user.failed_login_count
         if remaining <= 0:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=_LOCK_MSG)
         raise HTTPException(
@@ -165,7 +164,7 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)) -> To
         dummy_verify()
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=_ERROR_MSG)
 
-    if user.failed_login_count >= _MAX_FAILED_ATTEMPTS:
+    if user.is_locked:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=_LOCK_MSG)
 
     # 期限切れOTPをクリーンアップ
@@ -186,7 +185,7 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)) -> To
     if otp_record is None or not verify_password(payload.otp, otp_record.code):
         user.failed_login_count += 1
         await db.commit()
-        remaining = _MAX_FAILED_ATTEMPTS - user.failed_login_count
+        remaining = User.MAX_FAILED_LOGIN_ATTEMPTS - user.failed_login_count
         if remaining <= 0:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=_LOCK_MSG)
         raise HTTPException(

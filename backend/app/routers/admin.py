@@ -10,7 +10,7 @@ from app.models.geofence_setting import GeofenceSetting
 from app.models.leave_balance import LeaveBalance
 from app.models.office_location import OfficeLocation
 from app.models.user import User
-from app.schemas.auth import UserCreateRequest, UserResponse
+from app.schemas.auth import AdminUserListItem, UserCreateRequest, UserResponse
 from app.schemas.leave import LeaveBalanceResponse, LeaveBalanceUpdateRequest
 from app.schemas.location import (
     GeofenceSettingResponse,
@@ -73,6 +73,46 @@ async def create_user(
         is_active=user.is_active,
         email=user.email,
     )
+
+
+def _to_admin_user_list_item(user: User) -> AdminUserListItem:
+    return AdminUserListItem(
+        id=user.id,
+        employee_id=user.employee_id,
+        name=user.name,
+        role=user.role,
+        is_active=user.is_active,
+        email=user.email,
+        is_locked=user.is_locked,
+    )
+
+
+@router.get("/users", response_model=list[AdminUserListItem])
+async def list_users(
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_admin),
+) -> list[AdminUserListItem]:
+    result = await db.execute(select(User).order_by(User.name))
+    users = result.scalars().all()
+    return [_to_admin_user_list_item(u) for u in users]
+
+
+@router.patch("/users/{user_id}/unlock", response_model=AdminUserListItem)
+async def unlock_user(
+    user_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_admin),
+) -> AdminUserListItem:
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="ユーザーが見つかりません")
+
+    user.failed_login_count = 0
+    await db.commit()
+    await db.refresh(user)
+
+    return _to_admin_user_list_item(user)
 
 
 @router.get("/leave-balances", response_model=list[LeaveBalanceResponse])

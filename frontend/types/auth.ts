@@ -36,3 +36,13 @@ export interface UserResponse {
   is_active: boolean
   email?: string
 }
+
+export interface AdminUserListItem {
+  id: number
+  employee_id: string
+  name: string
+  role: string
+  is_active: boolean
+  email?: string
+  is_locked: boolean
+}
