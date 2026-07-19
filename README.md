@@ -410,7 +410,7 @@ flowchart LR
   %% ─── 管理者専用 ───────────────────────────────────────────
   subgraph ADMIN["🛡️  ADMIN 限定"]
     direction TB
-    AdminUsers("👥 ユーザー管理\n/admin/users")
+    AdminUsers("👥 ユーザー管理\n/admin/users\n（アカウントロック解除）")
     AdminLeave("📋 有給残日数管理\n/admin/leave-balances")
     AdminLocations("📍 拠点・ジオフェンス管理\n/admin/locations")
   end
@@ -519,7 +519,7 @@ erDiagram
     string hashed_password
     string role
     bool is_active
-    int failed_login_count
+    int failed_login_count "3以上でロック。管理者が解除可能"
     datetime created_at
     datetime updated_at
   }
