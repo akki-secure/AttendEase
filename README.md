@@ -268,6 +268,56 @@
 
 <img width="918" height="479" alt="スクリーンショット 2026-07-19 9 43 17" src="https://github.com/user-attachments/assets/74145c32-8eb0-4a53-bfce-c7fa49683ea7" />
 
+
+
+
+
+
+
+
+
+
+
+24.システム管理者:ユーザー一覧の操作項目の「履歴」で確認でき、アカウントロックの解除の時だけ操作の不正防止を防ぐ為に、監査ログとして「いつ、誰が、何を」 というログを残せるようにしています。
+
+
+
+
+
+
+
+
+
+
+
+
+<img width="918" height="62" alt="スクリーンショット 2026-07-19 13 09 18" src="https://github.com/user-attachments/assets/0d57b943-24ac-4389-82c4-ab83d64faef7" />
+
+
+
+
+
+
+
+
+
+<img width="515" height="233" alt="スクリーンショット 2026-07-19 13 09 41" src="https://github.com/user-attachments/assets/e71ba0af-4350-48b8-ac04-835935f00a86" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ---
 
 ## 機能
