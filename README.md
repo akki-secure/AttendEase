@@ -231,8 +231,42 @@
 22.一般社員:ジオフェンス機能ONでの場合、勤怠一覧で、「状態」は「ジオフェンス」として確認することができます。
 
 
+
+
+
+
+
+
 <img width="1277" height="183" alt="スクリーンショット 2026-07-18 11 44 30" src="https://github.com/user-attachments/assets/02f4ffab-f957-416f-b257-36fb1a577bdc" />
 
+
+
+
+23.システム管理者：一般社員などのユーザーが社員ログインで、「アカウントロック」→「ユーザー一覧」をクリックして、「ロック」と表記されたユーザーを探して、項目の「操作」にある「ロック解除」をクリックすると、アカウントロックが解除されます。
+
+
+
+
+
+
+
+<img width="918" height="479" alt="スクリーンショット 2026-07-19 9 43 04" src="https://github.com/user-attachments/assets/a4d9f38e-3fb9-4145-a001-f7f554792750" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<img width="918" height="479" alt="スクリーンショット 2026-07-19 9 43 17" src="https://github.com/user-attachments/assets/74145c32-8eb0-4a53-bfce-c7fa49683ea7" />
 
 ---
 
