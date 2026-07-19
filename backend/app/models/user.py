@@ -9,6 +9,8 @@ from app.database import Base
 class User(Base):
     __tablename__ = "users"
 
+    MAX_FAILED_LOGIN_ATTEMPTS = 3
+
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     employee_id: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
@@ -29,3 +31,7 @@ class User(Base):
     leave_requests = relationship("LeaveRequest", foreign_keys="LeaveRequest.user_id", back_populates="user")
     leave_balances = relationship("LeaveBalance", back_populates="user")
     overtime_requests = relationship("OvertimeRequest", foreign_keys="OvertimeRequest.user_id", back_populates="user")
+
+    @property
+    def is_locked(self) -> bool:
+        return self.failed_login_count >= self.MAX_FAILED_LOGIN_ATTEMPTS

@@ -67,6 +67,16 @@ class UserResponse(BaseModel):
     email: str | None = None
 
 
+class AdminUserListItem(BaseModel):
+    id: int
+    employee_id: str
+    name: str
+    role: str
+    is_active: bool
+    email: str | None = None
+    is_locked: bool
+
+
 class PasswordResetRequestSchema(BaseModel):
     employee_id: str
 

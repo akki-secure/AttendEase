@@ -4,12 +4,8 @@ import type { GeofenceSetting, OfficeLocation } from "~/types/location"
 definePageMeta({ middleware: "admin" })
 
 const apiBase = useApiBase()
-const authStore = useAuthStore()
+const authHeaders = useAuthHeaders()
 const toast = useToast()
-
-function authHeaders() {
-  return { Authorization: `Bearer ${authStore.token}` }
-}
 
 const locations = ref<OfficeLocation[]>([])
 const isLoading = ref(false)
