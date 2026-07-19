@@ -46,3 +46,10 @@ export interface AdminUserListItem {
   email?: string
   is_locked: boolean
 }
+
+export interface AccountUnlockLogItem {
+  id: number
+  unlocked_by_employee_id: string
+  unlocked_by_name: string
+  created_at: string
+}
