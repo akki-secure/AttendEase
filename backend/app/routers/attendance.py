@@ -192,7 +192,7 @@ async def clock_out(
     clock_out_dt = payload.clock_out if payload.clock_out is not None else now
     if clock_out_dt.tzinfo is None:
         clock_out_dt = clock_out_dt.replace(tzinfo=timezone.utc)
-    today = now.date()
+    today = datetime.now(_JST).date()
 
     record = await _get_today_record(db, current_user.id, today)
     if record is None:
