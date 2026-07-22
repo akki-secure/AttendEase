@@ -103,8 +103,9 @@ async function openHistoryModal(user: AdminUserListItem) {
     const e = err as { data?: { detail?: string } }
     historyError.value = e?.data?.detail ?? "解除履歴の取得に失敗しました"
   } finally {
-    if (requestId !== historyRequestId) return
-    isLoadingHistory.value = false
+    if (requestId === historyRequestId) {
+      isLoadingHistory.value = false
+    }
   }
 }
 
