@@ -283,6 +283,7 @@
 | バックエンド | FastAPI / SQLAlchemy 2.0 / Alembic / python-jose / Pydantic v2 |
 | データベース | SQLite 3 |
 | インフラ | Docker / Docker Compose / AWS EC2 (t3.micro) / nginx / Let's Encrypt (Certbot) / DuckDNS |
+| CI/CD | GitHub Actions |
 
 ---
 
@@ -392,6 +393,33 @@ docker compose down --volumes --rmi all
 - 初回証明書発行は `scripts/init-letsencrypt.sh` を使用（`DOMAIN=xxx.duckdns.org ./scripts/init-letsencrypt.sh`）
 
 `NUXT_PUBLIC_API_BASE` は同一オリジン構成のため空文字（相対パス）で運用し、CORSも同一オリジンで完結する。
+
+---
+
+## CI/CD
+
+GitHub Actions で CI（テスト）と CD（本番デプロイ）を自動化している。
+
+### CI（`.github/workflows/ci.yml`）
+
+`main` への push・PR時に以下を並行実行する。
+
+| ジョブ | 内容 |
+|--------|------|
+| backend-test | Python 3.12 で依存関係をインストールし `pytest` を実行 |
+| frontend-build | Node.js 22 で `npm ci` → ESLint → `npm run build` |
+
+### CD（`.github/workflows/deploy.yml`）
+
+`main` への push をトリガーに、EC2への自動デプロイを行う。
+
+1. GitHub ActionsランナーのグローバルIPを取得
+2. AWSセキュリティグループのSSHポート(22番)に、そのIPのみを一時的に許可
+3. SSHでEC2に接続し、最新の `main` を pull → 不要なDockerイメージ・ビルドキャッシュを削除 → `docker-compose.prod.yml` でコンテナを再ビルド・再起動
+4. デプロイ完了後（成功・失敗を問わず）、一時許可したSSHアクセスを取り消す
+
+> [!NOTE]
+> SSHの22番ポートは常時開放せず、デプロイの実行中のみGitHub ActionsのIPを許可する方式にすることで、待ち受け範囲を最小限にしている。
 
 ---
 

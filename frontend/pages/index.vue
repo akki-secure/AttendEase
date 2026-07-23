@@ -297,15 +297,15 @@ const annualOtPct  = computed(() => Math.min((annualOtMin.value / OT_LIMIT_YEAR)
               <!-- 出社形態セグメントボタン -->
               <div class="flex w-full rounded-lg overflow-hidden border border-green-200 text-xs font-semibold">
                 <button
-                  class="flex-1 py-1.5 transition-colors"
+                  class="flex-1 py-1.5 transition-colors inline-flex items-center justify-center gap-1"
                   :class="workType === 'office' ? 'bg-green-600 text-white' : 'bg-white text-green-700 hover:bg-green-50'"
                   @click="workType = 'office'"
-                >🏢 出社</button>
+                ><UIcon name="i-heroicons-building-office-2" class="w-3.5 h-3.5" />出社</button>
                 <button
-                  class="flex-1 py-1.5 transition-colors border-l border-green-200"
+                  class="flex-1 py-1.5 transition-colors border-l border-green-200 inline-flex items-center justify-center gap-1"
                   :class="workType === 'remote' ? 'bg-green-600 text-white' : 'bg-white text-green-700 hover:bg-green-50'"
                   @click="workType = 'remote'"
-                >🏠 リモート</button>
+                ><UIcon name="i-heroicons-home" class="w-3.5 h-3.5" />リモート</button>
               </div>
               <input
                 v-model="clockInTime"
@@ -329,7 +329,8 @@ color="green" size="sm" icon="i-heroicons-arrow-right-circle"
                   v-if="attendanceStore.today?.record?.work_type"
                   :color="attendanceStore.today.record.work_type === 'office' ? 'green' : 'blue'"
                   variant="subtle" size="xs"
-                >{{ attendanceStore.today.record.work_type === 'office' ? '🏢 出社' : '🏠 リモート' }}</UBadge>
+                  class="inline-flex items-center gap-1"
+                ><UIcon :name="attendanceStore.today.record.work_type === 'office' ? 'i-heroicons-building-office-2' : 'i-heroicons-home'" class="w-3 h-3" />{{ attendanceStore.today.record.work_type === 'office' ? '出社' : 'リモート' }}</UBadge>
                 <UButton
 color="green" variant="soft" size="xs" icon="i-heroicons-pencil-square"
                   @click="startFixClockIn">時刻を修正</UButton>
@@ -337,15 +338,15 @@ color="green" variant="soft" size="xs" icon="i-heroicons-pencil-square"
               <template v-else>
                 <div class="flex w-full rounded-lg overflow-hidden border border-green-200 text-xs font-semibold">
                   <button
-                    class="flex-1 py-1.5 transition-colors"
+                    class="flex-1 py-1.5 transition-colors inline-flex items-center justify-center gap-1"
                     :class="fixClockInWorkType === 'office' ? 'bg-green-600 text-white' : 'bg-white text-green-700 hover:bg-green-50'"
                     @click="fixClockInWorkType = fixClockInWorkType === 'office' ? null : 'office'"
-                  >🏢 出社</button>
+                  ><UIcon name="i-heroicons-building-office-2" class="w-3.5 h-3.5" />出社</button>
                   <button
-                    class="flex-1 py-1.5 transition-colors border-l border-green-200"
+                    class="flex-1 py-1.5 transition-colors border-l border-green-200 inline-flex items-center justify-center gap-1"
                     :class="fixClockInWorkType === 'remote' ? 'bg-green-600 text-white' : 'bg-white text-green-700 hover:bg-green-50'"
                     @click="fixClockInWorkType = fixClockInWorkType === 'remote' ? null : 'remote'"
-                  >🏠 リモート</button>
+                  ><UIcon name="i-heroicons-home" class="w-3.5 h-3.5" />リモート</button>
                 </div>
                 <input
 v-model="fixClockInTime" type="time"
