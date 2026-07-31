@@ -1,0 +1,3 @@
+codrone-edu
+requests
+python-dotenv
