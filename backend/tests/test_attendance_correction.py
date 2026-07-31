@@ -1,4 +1,5 @@
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 from httpx import AsyncClient
 from sqlalchemy import select
@@ -6,6 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.notification import Notification
 from tests.conftest import auth_headers
+
+_JST = ZoneInfo("Asia/Tokyo")
 
 
 async def _create_closed_record(client: AsyncClient, employee) -> int:
@@ -190,7 +193,9 @@ async def test_reject_correction_restores_original_values(
 ):
     record_id = await _create_closed_record(client, employee)
 
-    before = await client.get("/api/v1/attendance/me?month=" + date.today().strftime("%Y-%m"), headers=auth_headers(employee))
+    before = await client.get(
+        "/api/v1/attendance/me?month=" + datetime.now(_JST).strftime("%Y-%m"), headers=auth_headers(employee)
+    )
     original = next(r for r in before.json()["records"] if r["id"] == record_id)
 
     await _submit_correction(client, employee, record_id)

@@ -1,8 +1,11 @@
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 from httpx import AsyncClient
 
 from tests.conftest import auth_headers
+
+_JST = ZoneInfo("Asia/Tokyo")
 
 
 async def test_overtime_is_rounded_down_to_15_minutes(client: AsyncClient, employee):
@@ -23,7 +26,7 @@ async def test_overtime_is_rounded_down_to_15_minutes(client: AsyncClient, emplo
     assert res.status_code == 200
     assert res.json()["work_minutes"] == 520
 
-    month = now.strftime("%Y-%m")
+    month = datetime.now(_JST).strftime("%Y-%m")
     monthly = await client.get(f"/api/v1/attendance/me?month={month}", headers=headers)
     assert monthly.status_code == 200
     assert monthly.json()["total_overtime_minutes"] == 30
@@ -45,7 +48,7 @@ async def test_overtime_under_15_minutes_rounds_to_zero(client: AsyncClient, emp
         headers=headers,
     )
 
-    month = now.strftime("%Y-%m")
+    month = datetime.now(_JST).strftime("%Y-%m")
     monthly = await client.get(f"/api/v1/attendance/me?month={month}", headers=headers)
     assert monthly.status_code == 200
     assert monthly.json()["total_overtime_minutes"] == 0
