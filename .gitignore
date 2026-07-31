@@ -13,3 +13,6 @@ dist/
 
 # Claude memory files
 .claude/memory/
+
+# CoDroneEDU連携
+integrations/codrone/token_cache.json
