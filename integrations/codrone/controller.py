@@ -16,8 +16,9 @@ class Controller:
         self._prev_left = False
         self._prev_right = False
 
-    def connect(self) -> None:
-        self.drone.pair()
+    def connect(self, port: str | None = None) -> None:
+        # 自動ペアリングは失敗しやすいため、CODRONE_PORT環境変数でCOMポートを指定できるようにする
+        self.drone.pair(port)
 
     def close(self) -> None:
         self.drone.close()
