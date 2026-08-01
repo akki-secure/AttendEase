@@ -719,3 +719,101 @@ erDiagram
 ```bash
 git checkout -b feature/your-branch-name
 ```
+
+---
+
+## おまけ機能: CoDroneEDUコントローラーでの打刻連携
+
+RoboLink社の「CoDroneEDU」というドローン教育キットのコントローラーを使って、ボタン操作でAttendEaseに出勤・退勤を打刻できる概念実証です。ポートフォリオとしての技術アピール・遊び心を目的としたもので、AttendEase本体（`backend/`, `frontend/`）のコードは一切変更しておらず、`integrations/codrone/`配下の独立したPythonスクリプトとして動作します。
+
+### 操作フロー図
+
+```mermaid
+flowchart TD
+  Start(["🚀 python bridge.py 起動"]) --> Otp["📧 認証コード(OTP)入力\n(初回のみ)"]
+  Otp --> Pair["🔌 コントローラーとペアリング"]
+  Pair --> Ready["✅ 接続完了・待機中"]
+
+  Ready -->|"十字ボタン ← "| Office["🏢 出社モード\n(LED青)"]
+  Ready -->|"十字ボタン → "| Remote["🏠 リモートモード\n(LED緑)"]
+  Office --> Ready
+  Remote --> Ready
+
+  Ready -->|"パワーボタン1.5秒長押し"| Toggle{"現在の状態は？"}
+  Toggle -->|"未出勤"| ClockIn["🎵 出勤を記録\n(上昇メロディ)"]
+  Toggle -->|"出勤中"| ClockOut["🎵 退勤を記録\n(下降メロディ)"]
+  Toggle -->|"本日完了済み"| Done["💬 案内メッセージのみ\n(エラーにはならない)"]
+  Toggle -->|"通信エラー等"| Error["🔴 赤LED点滅+エラー音"]
+
+  ClockIn --> Ready
+  ClockOut --> Ready
+  Done --> Ready
+  Error --> Ready
+```
+
+### Windowsでのセットアップ手順
+
+AttendEase本体は既にAWS EC2（`https://attendease2026.duckdns.org`）にデプロイ済みのため、Docker等のセットアップは不要です。コントローラー用のフォルダだけを取得して動かします。
+
+1. **Gitをインストール**（未導入の場合）: [git-scm.com](https://git-scm.com/downloads) からダウンロードし、デフォルト設定のままインストール
+2. **リポジトリを取得**
+   ```
+   git clone https://github.com/akki-secure/AttendEase.git
+   cd AttendEase\integrations\codrone
+   ```
+3. **Pythonをインストール**（未導入の場合）: [python.org](https://www.python.org/downloads/) から**3.12系**をダウンロード（3.14など最新すぎるバージョンは一部パッケージのビルドに失敗する事例あり）。インストール時は「**Add python.exe to PATH**」に必ずチェック
+4. **依存パッケージをインストール**
+   ```
+   pip install -r requirements.txt
+   ```
+5. **`.env`ファイルを作成**
+   ```
+   copy .env.example .env
+   notepad .env
+   ```
+   以下を設定:
+   ```
+   ATTENDEASE_BASE_URL=https://attendease2026.duckdns.org
+   ATTENDEASE_EMPLOYEE_ID=(あなたの社員ID)
+   ATTENDEASE_PASSWORD=(あなたのパスワード)
+   CODRONE_PORT=(任意。自動ペアリングが失敗する場合にCOMポート番号を指定)
+   ```
+6. **USBケーブルでコントローラーを接続**し、電源ボタンを押して起動
+7. **起動**
+   ```
+   python bridge.py
+   ```
+   コンソールの案内に従い、登録メールに届いた6桁の認証コード（OTP）を入力するとログインが完了し、コントローラーとのペアリングが始まります。「接続完了」と表示されたら操作可能です。
+
+### 操作方法
+
+| 操作 | ボタン | 内容 |
+|---|---|---|
+| 出社モードにする | 十字ボタン「左」 | LEDが青になる |
+| リモートモードにする | 十字ボタン「右」 | LEDが緑になる |
+| 出勤/退勤を打刻 | パワーボタンを1.5秒以上長押し | 現在の状態を見て出勤/退勤を自動判定して記録 |
+
+出勤成功時は上昇するメロディ、退勤成功時は下降するメロディが鳴ります。通信エラーなど打刻に失敗した場合は、LEDが赤く点滅し低い音のエラー音が鳴ります。
+
+コントローラーでできるのは「現在時刻でのリアルタイムな出退勤打刻」と「出社/リモート切り替え」のみです。時刻を指定した登録・修正、休暇申請、月次確認などは引き続きブラウザから操作してください。
+
+### トラブルシューティング
+
+> [!WARNING]
+> **`python`コマンドがMicrosoft Storeのダミーに反応してしまう場合**
+>
+> `python --version`でバージョンが表示されない、または`python bridge.py`を実行しても`bridge.py`が実行されずPython自体の情報だけが表示されて終わる場合、Windows標準の「アプリ実行エイリアス」が正規インストールしたPythonより優先されている可能性があります。
+>
+> `where python`を実行し、一番上が`...\WindowsApps\python.exe`になっていないか確認してください。該当する場合は以下のいずれかで対処できます。
+> - 設定 → アプリ → 詳細なアプリ設定 → アプリ実行エイリアス で「python.exe」「python3.exe」をオフにする
+> - `python`の代わりに`py`コマンドを使う（例: `py bridge.py`、`py -m pip install -r requirements.txt`）
+
+> [!NOTE]
+> **ペアリング時に`Could not connect to CoDrone EDU. Check that the drone is on and paired to the controller.`と表示される**
+>
+> これはCoDroneEDU SDKが物理的なドローン本体の飛行可能状態を確認しようとして失敗しているだけの警告で、処理を止めるものではありません。コントローラー単体でのUSB接続自体は成功しており、続けて「接続完了」と表示されればそのまま操作できます（実機確認済み）。
+
+> [!NOTE]
+> **本日すでに退勤済み（CLOSED状態）の場合**
+>
+> パワーボタンを長押ししても「本日は既に処理済みのため打刻できません」と案内が表示されるだけで、エラーにはなりません。1日1往復（出勤→退勤）までの仕様のため、翌日改めてお試しください。
