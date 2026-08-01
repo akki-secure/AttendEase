@@ -1,5 +1,6 @@
 """CoDroneEDUコントローラーでAttendEaseに打刻するブリッジ本体。"""
 
+import os
 import time
 
 import feedback
@@ -12,8 +13,9 @@ def main() -> None:
     client.ensure_logged_in()
 
     controller = Controller()
-    print("コントローラーとペアリングしています...")
-    controller.connect()
+    port = os.environ.get("CODRONE_PORT") or None
+    print(f"コントローラーとペアリングしています...(port={port or '自動検出'})")
+    controller.connect(port)
     print("接続完了。パワーボタン長押しで出勤/退勤、十字ボタン左右で出社/リモート切り替え。")
 
     work_type = "office"
@@ -43,15 +45,17 @@ def main() -> None:
 
 def _handle_toggle_clock(client: AttendEaseClient, drone, work_type: str) -> None:
     try:
-        status = client.get_today_status()
-        if status["status"] == "NOT_CLOCKED_IN":
+        status = client.get_today_status()["status"]
+        if status == "NOT_CLOCKED_IN":
             client.clock_in(work_type)
             feedback.play_clock_in_sound(drone)
             print(f"出勤を記録しました({work_type})。")
-        else:
+        elif status == "PRESENT":
             client.clock_out()
             feedback.play_clock_out_sound(drone)
             print("退勤を記録しました。")
+        else:
+            print(f"本日は既に処理済みのため打刻できません(状態: {status})。")
     except Exception as e:
         feedback.led_error(drone)
         feedback.play_error_sound(drone)
