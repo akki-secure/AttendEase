@@ -35,6 +35,19 @@ def test_present_triggers_clock_out():
     mock_feedback.play_clock_out_sound.assert_called_once_with(drone)
 
 
+def test_closed_status_does_not_call_clock_out():
+    client = MagicMock()
+    client.get_today_status.return_value = {"status": "CLOSED"}
+    drone = MagicMock()
+
+    with patch("bridge.feedback") as mock_feedback:
+        _handle_toggle_clock(client, drone, "office")
+
+    client.clock_in.assert_not_called()
+    client.clock_out.assert_not_called()
+    mock_feedback.led_error.assert_not_called()
+
+
 def test_api_failure_triggers_error_feedback():
     client = MagicMock()
     client.get_today_status.side_effect = Exception("network error")
