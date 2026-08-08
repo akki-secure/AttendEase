@@ -16,7 +16,7 @@ def main() -> None:
     port = os.environ.get("CODRONE_PORT") or None
     print(f"コントローラーとペアリングしています...(port={port or '自動検出'})")
     controller.connect(port)
-    print("接続完了。パワーボタン長押しで出勤/退勤、十字ボタン左右で出社/リモート切り替え。")
+    print("接続完了。Sボタン長押しで出勤/退勤、十字ボタン左右で出社/リモート切り替え。")
 
     work_type = "office"
     feedback.led_office(controller.drone)
@@ -48,13 +48,13 @@ def _handle_toggle_clock(client: AttendEaseClient, drone, work_type: str) -> Non
         status = client.get_today_status()["status"]
         if status == "NOT_CLOCKED_IN":
             client.clock_in(work_type)
-            feedback.show_clock_in_image(drone)
             feedback.play_clock_in_sound(drone)
+            feedback.show_clock_in_image(drone)
             print(f"出勤を記録しました({work_type})。")
         elif status == "PRESENT":
             client.clock_out()
-            feedback.show_clock_out_image(drone)
             feedback.play_clock_out_sound(drone)
+            feedback.show_clock_out_image(drone)
             print("退勤を記録しました。")
         else:
             print(f"本日は既に処理済みのため打刻できません(状態: {status})。")
