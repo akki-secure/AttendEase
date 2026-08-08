@@ -62,7 +62,9 @@ def _draw_image_on_controller(drone: Drone, image_path: Path) -> None:
     """
     try:
         pixel_list = drone.get_image_data(str(image_path))
+        print(f"[DEBUG] pixel_list: type={type(pixel_list)} len={len(pixel_list) if pixel_list else None} num_elem={len(pixel_list[0]) if pixel_list else None}")
         drone.controller_draw_image(pixel_list)
+        print("[DEBUG] controller_draw_image完了")
     except Exception as e:
         print(f"ディスプレイ表示に失敗しました: {e}")
 
