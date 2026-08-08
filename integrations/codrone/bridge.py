@@ -48,10 +48,12 @@ def _handle_toggle_clock(client: AttendEaseClient, drone, work_type: str) -> Non
         status = client.get_today_status()["status"]
         if status == "NOT_CLOCKED_IN":
             client.clock_in(work_type)
+            feedback.show_clock_in_image(drone)
             feedback.play_clock_in_sound(drone)
             print(f"出勤を記録しました({work_type})。")
         elif status == "PRESENT":
             client.clock_out()
+            feedback.show_clock_out_image(drone)
             feedback.play_clock_out_sound(drone)
             print("退勤を記録しました。")
         else:

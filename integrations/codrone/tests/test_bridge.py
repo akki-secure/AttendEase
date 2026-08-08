@@ -19,6 +19,7 @@ def test_not_clocked_in_triggers_clock_in():
 
     client.clock_in.assert_called_once_with("office")
     client.clock_out.assert_not_called()
+    mock_feedback.show_clock_in_image.assert_called_once_with(drone)
     mock_feedback.play_clock_in_sound.assert_called_once_with(drone)
 
 
@@ -32,6 +33,7 @@ def test_present_triggers_clock_out():
 
     client.clock_out.assert_called_once()
     client.clock_in.assert_not_called()
+    mock_feedback.show_clock_out_image.assert_called_once_with(drone)
     mock_feedback.play_clock_out_sound.assert_called_once_with(drone)
 
 
