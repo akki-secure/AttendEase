@@ -11,8 +11,8 @@ POLL_INTERVAL_SECONDS = 0.05
 class Controller:
     def __init__(self) -> None:
         self.drone = Drone()
-        self._power_pressed_since: float | None = None
-        self._power_long_press_fired = False
+        self._toggle_pressed_since: float | None = None
+        self._toggle_long_press_fired = False
         self._prev_left = False
         self._prev_right = False
 
@@ -23,18 +23,23 @@ class Controller:
     def close(self) -> None:
         self.drone.close()
 
-    def _power_long_pressed_edge(self) -> bool:
-        """パワーボタンが長押しされた瞬間に1回だけTrueを返す。"""
-        if self.drone.power_pressed():
-            if self._power_pressed_since is None:
-                self._power_pressed_since = time.monotonic()
-            held = time.monotonic() - self._power_pressed_since
-            if held >= LONG_PRESS_SECONDS and not self._power_long_press_fired:
-                self._power_long_press_fired = True
+    def _toggle_long_pressed_edge(self) -> bool:
+        """Sボタンが長押しされた瞬間に1回だけTrueを返す。
+
+        パワーボタンは電源管理を兼ねており、長押しするとコントローラーの
+        画面が消灯し打刻フィードバック画像が表示されない事象を確認したため、
+        Sボタンを打刻トリガーに使う。
+        """
+        if self.drone.s_pressed():
+            if self._toggle_pressed_since is None:
+                self._toggle_pressed_since = time.monotonic()
+            held = time.monotonic() - self._toggle_pressed_since
+            if held >= LONG_PRESS_SECONDS and not self._toggle_long_press_fired:
+                self._toggle_long_press_fired = True
                 return True
         else:
-            self._power_pressed_since = None
-            self._power_long_press_fired = False
+            self._toggle_pressed_since = None
+            self._toggle_long_press_fired = False
         return False
 
     def _mode_switch_edge(self) -> str | None:
@@ -52,7 +57,7 @@ class Controller:
 
     def poll_events(self):
         """1周期分ボタン状態を確認し、発生したイベント名(またはNone)を返す。呼び出し側でループさせる。"""
-        if self._power_long_pressed_edge():
+        if self._toggle_long_pressed_edge():
             return "toggle_clock"
         mode_event = self._mode_switch_edge()
         if mode_event is not None:

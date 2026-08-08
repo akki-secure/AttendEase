@@ -16,7 +16,7 @@ def main() -> None:
     port = os.environ.get("CODRONE_PORT") or None
     print(f"コントローラーとペアリングしています...(port={port or '自動検出'})")
     controller.connect(port)
-    print("接続完了。パワーボタン長押しで出勤/退勤、十字ボタン左右で出社/リモート切り替え。")
+    print("接続完了。Sボタン長押しで出勤/退勤、十字ボタン左右で出社/リモート切り替え。")
 
     work_type = "office"
     feedback.led_office(controller.drone)
