@@ -266,7 +266,8 @@
 ※ジオフェンス機能をOFFにすることで、出勤もしくは、退勤での時間のジオフェンスで定めた範囲外での手動入力、修正、勤怠一覧での前日の出勤と退勤での登録もできるようになります。
 
 
-<img width="1149" height="534" alt="スクリーンショット 2026-07-19 8 55 58" src="https://github.com/user-attachments/assets/a2bd1014-ec50-4416-802f-5ed409ff73fd" />
+<img width="1120" height="588" alt="スクリーンショット 2026-08-09 20 37 57" src="https://github.com/user-attachments/assets/e92900f5-a0db-4250-ba6d-85f4b81b7f0a" />
+
 
 
 <img width="515" height="520" alt="スクリーンショット 2026-07-19 8 53 40" src="https://github.com/user-attachments/assets/116926a3-310d-4577-bdd7-d7f3ba1496ad" />
