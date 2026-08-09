@@ -45,6 +45,29 @@ async def test_request_correction_moves_to_pending_and_keeps_original(
     assert body["work_minutes"] == 375  # 7h(420分) - 45min break
 
 
+async def test_request_correction_over_8h_grants_60min_break(
+    client: AsyncClient, employee
+):
+    """09:00-18:15(9h15m)の修正申請 -> 8時間超のため60分休憩が自動付与され8h15mになる"""
+    record_id = await _create_closed_record(client, employee)
+    clock_in = datetime(2026, 8, 9, 0, 0, tzinfo=timezone.utc)  # JST 09:00相当
+    clock_out = clock_in + timedelta(hours=9, minutes=15)  # JST 18:15相当
+
+    res = await client.patch(
+        f"/api/v1/attendance/{record_id}/correction-request",
+        json={
+            "clock_in": clock_in.isoformat(),
+            "clock_out": clock_out.isoformat(),
+            "note": "打刻ミス。",
+        },
+        headers=auth_headers(employee),
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["break_minutes"] == 60  # 9h15m労働 -> 労基法上8時間超で60分自動付与
+    assert body["work_minutes"] == 495  # 9h15m(555分) - 60min break = 8h15m
+
+
 async def test_request_correction_overnight_shift_rolls_to_next_day(
     client: AsyncClient, employee
 ):
