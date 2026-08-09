@@ -80,6 +80,11 @@ def _to_correction_response(record: AttendanceRecord) -> CorrectionRequestRespon
     return CorrectionRequestResponse(user_name=record.user.name, **base.model_dump())
 
 
+async def _is_geofence_enabled(db: AsyncSession) -> bool:
+    setting = (await db.execute(select(GeofenceSetting))).scalars().first()
+    return setting is not None and setting.enabled
+
+
 async def _reject_if_geofence_enabled(db: AsyncSession) -> None:
     """ジオフェンス機能が有効な間は、位置情報の再検証を伴わない打刻修正を禁止する。
 
@@ -87,8 +92,7 @@ async def _reject_if_geofence_enabled(db: AsyncSession) -> None:
     ジオフェンスON中にこれを許すと「拠点内で打刻→修正で時刻だけ書き換え」で
     検証済みバッジだけが残る抜け道になる。
     """
-    setting = (await db.execute(select(GeofenceSetting))).scalars().first()
-    if setting is not None and setting.enabled:
+    if await _is_geofence_enabled(db):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="ジオフェンス機能が有効な間は打刻修正できません",
@@ -154,7 +158,10 @@ async def clock_in(
     db: AsyncSession = Depends(get_db),
 ) -> AttendanceResponse:
     now = datetime.now(timezone.utc)
-    clock_in_dt = payload.clock_in if payload.clock_in is not None else now
+    geofence_enabled = await _is_geofence_enabled(db)
+    # ジオフェンスON中は自己申告の時刻を信用せず、打刻した瞬間のサーバー時刻を強制する
+    # （GPSは「今その場にいるか」しか見ないため、時刻欄の書き換えによる虚偽申告を防ぐ）
+    clock_in_dt = now if geofence_enabled or payload.clock_in is None else payload.clock_in
     if clock_in_dt.tzinfo is None:
         clock_in_dt = clock_in_dt.replace(tzinfo=timezone.utc)
     today = datetime.now(_JST).date()
@@ -189,7 +196,8 @@ async def clock_out(
     db: AsyncSession = Depends(get_db),
 ) -> AttendanceResponse:
     now = datetime.now(timezone.utc)
-    clock_out_dt = payload.clock_out if payload.clock_out is not None else now
+    geofence_enabled = await _is_geofence_enabled(db)
+    clock_out_dt = now if geofence_enabled or payload.clock_out is None else payload.clock_out
     if clock_out_dt.tzinfo is None:
         clock_out_dt = clock_out_dt.replace(tzinfo=timezone.utc)
     today = datetime.now(_JST).date()
