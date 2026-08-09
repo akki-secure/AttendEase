@@ -26,21 +26,29 @@ def _new_canvas() -> tuple[Image.Image, ImageDraw.ImageDraw]:
 
 
 def build_clock_in_image() -> Image.Image:
-    """出勤: 歩く人物のシルエット。"""
+    """出勤: ドアに向かって歩き、入っていく人物のシルエット(退勤アイコンと対になる構図)。"""
     img, draw = _new_canvas()
 
+    # 歩く人物(左側、ドアに向かって右へ進む)
     # 頭
-    draw.ellipse((52, 6, 66, 20), fill=SILHOUETTE)
-    # 胴体(前傾)
-    draw.polygon([(56, 20), (68, 22), (66, 40), (54, 40)], fill=SILHOUETTE)
-    # 前に伸ばした腕
-    draw.line((66, 24, 84, 30), fill=SILHOUETTE, width=4)
+    draw.ellipse((18, 6, 32, 20), fill=SILHOUETTE)
+    # 胴体(進行方向へ前傾)
+    draw.polygon([(30, 20), (16, 22), (18, 40), (28, 40)], fill=SILHOUETTE)
+    # 前に伸ばした腕(ドア方向)
+    draw.line((18, 24, 2, 18), fill=SILHOUETTE, width=4)
     # 後ろに引いた腕
-    draw.line((56, 24, 42, 34), fill=SILHOUETTE, width=4)
-    # 前に出した足
-    draw.line((62, 40, 78, 56), fill=SILHOUETTE, width=5)
-    # 後ろの足
-    draw.line((58, 40, 46, 58), fill=SILHOUETTE, width=5)
+    draw.line((28, 24, 40, 32), fill=SILHOUETTE, width=4)
+    # 蹴り出した前足(地面から浮いている)
+    draw.line((22, 40, 6, 48), fill=SILHOUETTE, width=5)
+    # 地面に着いた後ろ足
+    draw.line((26, 40, 36, 58), fill=SILHOUETTE, width=5)
+
+    # 入室方向の矢印
+    draw.line((46, 32, 78, 32), fill=SILHOUETTE, width=4)
+    draw.polygon([(78, 32), (70, 26), (70, 40)], fill=SILHOUETTE)
+
+    # ドア枠(入っていく先)
+    draw.rectangle((92, 6, 124, 58), outline=SILHOUETTE, width=3)
 
     return img
 
