@@ -128,7 +128,6 @@ export const useAttendanceStore = defineStore("attendance", () => {
     clockIn: string,
     clockOut: string,
     note: string,
-    breakMinutes = 0,
   ): Promise<AttendanceRecord> {
     isLoading.value = true
     error.value = null
@@ -138,7 +137,7 @@ export const useAttendanceStore = defineStore("attendance", () => {
         {
           method: "PATCH",
           headers: authHeaders(),
-          body: { clock_in: clockIn, clock_out: clockOut, break_minutes: breakMinutes, note },
+          body: { clock_in: clockIn, clock_out: clockOut, note },
         },
       )
       await fetchToday()

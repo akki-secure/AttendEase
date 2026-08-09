@@ -34,7 +34,6 @@ async def test_request_correction_moves_to_pending_and_keeps_original(
         json={
             "clock_in": now.isoformat(),
             "clock_out": (now + timedelta(hours=7)).isoformat(),
-            "break_minutes": 60,
             "note": "打刻を忘れたため修正します",
         },
         headers=auth_headers(employee),
@@ -42,7 +41,8 @@ async def test_request_correction_moves_to_pending_and_keeps_original(
     assert res.status_code == 200
     body = res.json()
     assert body["status"] == "CORRECTION_PENDING"
-    assert body["work_minutes"] == 360  # 7h - 60min break
+    assert body["break_minutes"] == 45  # 7h労働 -> 労基法上6時間超で45分自動付与
+    assert body["work_minutes"] == 375  # 7h(420分) - 45min break
 
 
 async def test_request_correction_overnight_shift_rolls_to_next_day(
@@ -58,7 +58,6 @@ async def test_request_correction_overnight_shift_rolls_to_next_day(
         json={
             "clock_in": clock_in.isoformat(),
             "clock_out": clock_out.isoformat(),
-            "break_minutes": 0,
             "note": "夜勤のため日をまたぎます",
         },
         headers=auth_headers(employee),
@@ -78,7 +77,6 @@ async def test_request_correction_equal_times_rejected(client: AsyncClient, empl
         json={
             "clock_in": now.isoformat(),
             "clock_out": now.isoformat(),
-            "break_minutes": 0,
             "note": "同時刻",
         },
         headers=auth_headers(employee),
@@ -96,7 +94,6 @@ async def test_request_correction_notifies_managers(
         json={
             "clock_in": now.isoformat(),
             "clock_out": (now + timedelta(hours=7)).isoformat(),
-            "break_minutes": 0,
             "note": "修正申請",
         },
         headers=auth_headers(employee),
@@ -120,7 +117,6 @@ async def test_request_correction_on_other_users_record_404(
         json={
             "clock_in": now.isoformat(),
             "clock_out": (now + timedelta(hours=7)).isoformat(),
-            "break_minutes": 0,
             "note": "他人の記録を修正しようとする",
         },
         headers=auth_headers(other_employee),
@@ -135,7 +131,6 @@ async def _submit_correction(client: AsyncClient, employee, record_id: int) -> N
         json={
             "clock_in": now.isoformat(),
             "clock_out": (now + timedelta(hours=7)).isoformat(),
-            "break_minutes": 30,
             "note": "修正申請",
         },
         headers=auth_headers(employee),

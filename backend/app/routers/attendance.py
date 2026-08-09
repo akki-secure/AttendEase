@@ -473,9 +473,11 @@ async def request_correction(
         record.original_break_minutes = record.break_minutes
         record.original_status = record.status
 
+    total_minutes = int((clock_out - clock_in).total_seconds() // 60)
+
     record.clock_in = clock_in
     record.clock_out = clock_out
-    record.break_minutes = payload.break_minutes
+    record.break_minutes = legal_break_minutes(total_minutes)
     record.correction_note = payload.note
     record.status = "CORRECTION_PENDING"
     record.reviewer_id = None
