@@ -102,7 +102,8 @@
 5.一般社員:一般社員のログイン画面が表示されます。
 
 
-<img width="1056" height="603" alt="スクリーンショット 2026-06-10 21 15 07" src="https://github.com/user-attachments/assets/e689613b-cf0e-4f95-8c1e-ff19ef4141c2" />
+<img width="1015" height="595" alt="スクリーンショット 2026-08-09 18 25 59" src="https://github.com/user-attachments/assets/a4304ad5-bb42-4be4-816c-9f9f2a7dc7ca" />
+
 
 
 6.勤怠登録の「出勤」と「退勤」では、手動での入力もしくは、時計のアイコンをクリックして、数字を選択しての時間設定を行い、出勤すると退勤するをクリックしてください。※「出勤」のみが、出勤もしくは、リモートを選択することができます。
@@ -110,19 +111,24 @@
 
 (出勤もしくは、リモートの場合)
 
-<img width="478" height="371" alt="スクリーンショット 2026-06-10 21 43 57" src="https://github.com/user-attachments/assets/82780569-82eb-47ab-8b39-353fba04d1b2" />
+
+
+<img width="476" height="421" alt="スクリーンショット 2026-08-09 18 27 39" src="https://github.com/user-attachments/assets/b75aff50-cdb7-4904-90ca-946f23d8e405" />
+
 
 
 (退勤の場合)
 
 
-<img width="478" height="371" alt="スクリーンショット 2026-06-10 21 47 55" src="https://github.com/user-attachments/assets/d1988fc3-87a1-4e48-aa42-d985ce43c838" />
+<img width="476" height="490" alt="スクリーンショット 2026-08-09 18 28 46" src="https://github.com/user-attachments/assets/acc24ddd-2c41-4340-9de3-0369b8c94b24" />
+
 
 
 7.「勤怠の時間」の結果が表示されます。※もし、出勤もしくは、退勤で、間違って入力した時間を修正することも可能です。
 
 
-<img width="478" height="467" alt="スクリーンショット 2026-06-10 21 49 56" src="https://github.com/user-attachments/assets/c65d8040-9c38-428c-88dc-9d205017084c" />
+<img width="476" height="437" alt="スクリーンショット 2026-08-09 18 28 56" src="https://github.com/user-attachments/assets/49ec9b28-0c83-4e85-a261-65a432a6369c" />
+
 
 
 8.一般社員:休暇申請の場合、「休暇申請」をクリックします。→新規作成をクリックします。→「休暇種別」、「日時」、「申請理由」を入力して、「申請する」をクリックしてください。
@@ -906,6 +912,35 @@ AttendEase本体は既にAWS EC2（`https://attendease2026.duckdns.org`）にデ
 
 
 
+(出勤アイコン)
+
+
+
+
+
+
+
+
+
+
+
+https://github.com/user-attachments/assets/be3694d6-6295-48ea-903f-fd1766362ef6
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 (退勤アイコン)
 
 
@@ -917,7 +952,11 @@ AttendEase本体は既にAWS EC2（`https://attendease2026.duckdns.org`）にデ
 
 
 
-https://github.com/user-attachments/assets/de83fbb6-0b92-49f1-b568-d2917bb56875
+
+
+https://github.com/user-attachments/assets/bd684796-c347-40c5-b353-64bd263e2020
+
+
 
 
 
