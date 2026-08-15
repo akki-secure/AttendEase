@@ -307,11 +307,10 @@ const annualOtPct  = computed(() => Math.min((annualOtMin.value / OT_LIMIT_YEAR)
                   @click="workType = 'remote'"
                 ><UIcon name="i-heroicons-home" class="w-3.5 h-3.5" />リモート</button>
               </div>
-              <input
+              <TimePicker
                 v-model="clockInTime"
-                type="time"
-                class="w-full text-center text-3xl font-bold font-mono text-green-800 bg-white border border-green-200 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-green-400 cursor-pointer"
-              >
+                input-class="w-full text-center text-3xl font-bold font-mono text-green-800 bg-white border border-green-200 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-green-400 cursor-pointer"
+              />
               <UButton
 color="green" size="sm" icon="i-heroicons-arrow-right-circle"
                 class="w-full justify-center font-semibold"
@@ -348,9 +347,9 @@ color="green" variant="soft" size="xs" icon="i-heroicons-pencil-square"
                     @click="fixClockInWorkType = fixClockInWorkType === 'remote' ? null : 'remote'"
                   ><UIcon name="i-heroicons-home" class="w-3.5 h-3.5" />リモート</button>
                 </div>
-                <input
-v-model="fixClockInTime" type="time"
-                  class="w-full text-center text-2xl font-bold font-mono text-green-800 bg-white border border-green-300 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-green-400" >
+                <TimePicker
+v-model="fixClockInTime"
+                  input-class="w-full text-center text-2xl font-bold font-mono text-green-800 bg-white border border-green-300 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-green-400" />
                 <div class="flex gap-2 w-full">
                   <UButton
 color="gray" variant="soft" size="xs" class="flex-1 justify-center"
@@ -375,11 +374,10 @@ color="green" size="xs" icon="i-heroicons-check" class="flex-1 justify-center"
 
             <!-- 出勤中: 時刻入力 + 退勤ボタン -->
             <template v-if="canClockOut">
-              <input
+              <TimePicker
                 v-model="clockOutTime"
-                type="time"
-                class="w-full text-center text-3xl font-bold font-mono text-orange-800 bg-white border border-orange-200 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400 cursor-pointer"
-              >
+                input-class="w-full text-center text-3xl font-bold font-mono text-orange-800 bg-white border border-orange-200 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400 cursor-pointer"
+              />
               <UButton
 color="orange" size="sm" icon="i-heroicons-arrow-left-circle"
                 class="w-full justify-center font-semibold"
@@ -398,9 +396,9 @@ color="orange" variant="soft" size="xs" icon="i-heroicons-pencil-square"
                   @click="startFixClockOut">時刻を修正</UButton>
               </template>
               <template v-else>
-                <input
-v-model="fixClockOutTime" type="time"
-                  class="w-full text-center text-2xl font-bold font-mono text-orange-800 bg-white border border-orange-300 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400" >
+                <TimePicker
+v-model="fixClockOutTime"
+                  input-class="w-full text-center text-2xl font-bold font-mono text-orange-800 bg-white border border-orange-300 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400" />
                 <div class="flex gap-2 w-full">
                   <UButton
 color="gray" variant="soft" size="xs" class="flex-1 justify-center"
@@ -437,15 +435,15 @@ color="amber" variant="soft" size="sm" icon="i-heroicons-clipboard-document-chec
             <div class="grid grid-cols-2 gap-3">
               <div>
                 <label class="text-xs text-gray-500 mb-1 block">出勤時刻</label>
-                <input
-v-model="editClockIn" type="time"
-                  class="w-full text-center text-lg font-mono bg-white border border-amber-300 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400" >
+                <TimePicker
+v-model="editClockIn"
+                  input-class="w-full text-center text-lg font-mono bg-white border border-amber-300 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400" />
               </div>
               <div>
                 <label class="text-xs text-gray-500 mb-1 block">退勤時刻</label>
-                <input
-v-model="editClockOut" type="time"
-                  class="w-full text-center text-lg font-mono bg-white border border-amber-300 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400" >
+                <TimePicker
+v-model="editClockOut"
+                  input-class="w-full text-center text-lg font-mono bg-white border border-amber-300 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400" />
               </div>
             </div>
             <div>

@@ -470,21 +470,19 @@ const { roleTheme } = useRoleTheme()
           <!-- 出勤時刻 -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">出勤時刻</label>
-            <input
+            <TimePicker
               v-model="modalClockIn"
-              type="time"
-              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
-            >
+              input-class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
+            />
           </div>
 
           <!-- 退勤時刻 -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">退勤時刻</label>
-            <input
+            <TimePicker
               v-model="modalClockOut"
-              type="time"
-              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
-            >
+              input-class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
+            />
           </div>
 
           <!-- 休憩時間 -->

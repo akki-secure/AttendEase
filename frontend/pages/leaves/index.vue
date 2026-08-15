@@ -211,7 +211,7 @@ const { roleTheme } = useRoleTheme()
             </div>
             <div v-if="isTimeBasedForm">
               <label class="block text-xs font-medium text-gray-600 mb-1">本来の予定時刻</label>
-              <UInput :model-value="form.scheduled_time ?? undefined" type="time" class="w-full" @update:model-value="form.scheduled_time = $event" />
+              <TimePicker :model-value="form.scheduled_time ?? undefined" input-class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" @update:model-value="form.scheduled_time = $event" />
             </div>
             <div v-if="!isTimeBasedForm" class="sm:col-span-2 flex items-center gap-2">
               <UIcon name="i-heroicons-calendar-days" class="w-4 h-4 text-gray-400" />
