@@ -853,7 +853,7 @@ AttendEase本体は既にAWS EC2（`https://attendease2026.duckdns.org`）にデ
 
 
 
-(リモートの場合)
+(出社の場合)
 
 
 
@@ -895,7 +895,7 @@ AttendEase本体は既にAWS EC2（`https://attendease2026.duckdns.org`）にデ
 
 
 
-(出社の場合)
+(リモートの場合)
 
 
 
