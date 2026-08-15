@@ -109,18 +109,32 @@
 6.勤怠登録の「出勤」と「退勤」では、手動での入力もしくは、時計のアイコンをクリックして、数字を選択しての時間設定を行い、出勤すると退勤するをクリックしてください。※「出勤」のみが、出勤もしくは、リモートを選択することができます。
 
 
-(出勤もしくは、リモートの場合)
+(出社もしくは、リモートの場合)
 
 
 
-<img width="476" height="421" alt="スクリーンショット 2026-08-09 18 27 39" src="https://github.com/user-attachments/assets/b75aff50-cdb7-4904-90ca-946f23d8e405" />
+
+
+
+<img width="1202" height="638" alt="スクリーンショット 2026-08-16 5 34 32" src="https://github.com/user-attachments/assets/720ca76a-208d-4ebf-bcab-c41478e8e2b6" />
+
+
+
+
 
 
 
 (退勤の場合)
 
 
-<img width="476" height="490" alt="スクリーンショット 2026-08-09 18 28 46" src="https://github.com/user-attachments/assets/acc24ddd-2c41-4340-9de3-0369b8c94b24" />
+
+
+
+<img width="1144" height="623" alt="スクリーンショット 2026-08-16 5 37 05" src="https://github.com/user-attachments/assets/c6520c75-32e3-4e43-bb79-66ea7c163807" />
+
+
+
+
 
 
 
