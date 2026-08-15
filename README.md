@@ -855,6 +855,10 @@ AttendEase本体は既にAWS EC2（`https://attendease2026.duckdns.org`）にデ
 
 
 
+
+
+
+
 <img width="758" height="405" alt="スクリーンショット 2026-08-08 19 34 20" src="https://github.com/user-attachments/assets/2ad9e9c7-59ff-4b61-830b-8924c492a1d0" />
 
 
@@ -913,7 +917,12 @@ AttendEase本体は既にAWS EC2（`https://attendease2026.duckdns.org`）にデ
 
 
 
-(出勤アイコン)
+(出勤登録)
+
+
+
+
+
 
 
 
@@ -942,7 +951,32 @@ https://github.com/user-attachments/assets/be3694d6-6295-48ea-903f-fd1766362ef6
 
 
 
-(退勤アイコン)
+
+
+
+<img width="623" height="613" alt="スクリーンショット 2026-08-16 4 41 37" src="https://github.com/user-attachments/assets/798ed8c8-6e6e-4380-ba29-fd45a848ff77" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(退勤登録)
+
+
+
+
+
 
 
 
@@ -968,7 +1002,42 @@ https://github.com/user-attachments/assets/bd684796-c347-40c5-b353-64bd263e2020
 
 
 
-コントローラーでできるのは「現在時刻でのリアルタイムな出退勤打刻」と「出社/リモート切り替え」のみです。時刻を指定した登録・修正、休暇申請、月次確認などは引き続きブラウザから操作してください。
+
+
+
+
+
+
+
+
+
+
+<img width="623" height="613" alt="スクリーンショット 2026-08-16 4 43 45" src="https://github.com/user-attachments/assets/e7140b33-e17c-4095-ae36-46fb844fec4c" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+※コントローラーでできる事は「現在時刻でのリアルタイムな出退勤打刻」と「出社/リモート切り替え」のみです。時刻を指定した登録・修正、休暇申請、月次確認などは引き続きブラウザから操作してください。
+
+
+
+
+
+
 
 ### トラブルシューティング
 
@@ -990,3 +1059,19 @@ https://github.com/user-attachments/assets/bd684796-c347-40c5-b353-64bd263e2020
 > **本日すでに退勤済み（CLOSED状態）の場合**
 >
 > Sボタンを長押ししても「本日は既に処理済みのため打刻できません」と案内が表示されるだけで、エラーにはなりません。1日1往復（出勤→退勤）までの仕様のため、翌日改めてお試しください。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<img width="623" height="613" alt="スクリーンショット 2026-08-16 4 46 04" src="https://github.com/user-attachments/assets/16c2cb7a-29b1-495b-8f2c-f6287f98785e" />
+
