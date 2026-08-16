@@ -6,6 +6,7 @@ _JST = ZoneInfo("Asia/Tokyo")
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import and_, extract, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -184,7 +185,14 @@ async def clock_in(
         clock_in_geofence_verified=geofence_verified,
     )
     db.add(record)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="本日はすでに出勤打刻済みです",
+        )
     await db.refresh(record)
     return _to_response(record)
 
@@ -369,7 +377,14 @@ async def create_past_record(
         status="CLOSED",
     )
     db.add(record)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="指定日の打刻記録はすでに存在します",
+        )
     await db.refresh(record)
     return _to_response(record)
 
