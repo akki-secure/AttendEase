@@ -775,7 +775,7 @@ git checkout -b feature/your-branch-name
 
 ## おまけ機能: CoDroneEDUコントローラーでの打刻連携
 
-RoboLink社の「CoDroneEDU」というドローン教育キットのコントローラーを使って、ボタン操作でAttendEaseに出勤・退勤を打刻できる概念実証です。ポートフォリオとしての技術アピール・遊び心を目的としたもので、AttendEase本体（`backend/`, `frontend/`）のコードは一切変更しておらず、`integrations/codrone/`配下の独立したPythonスクリプトとして動作します。
+RoboLink社の「CoDroneEDU」というドローン教育キットのコントローラーを使って、ボタン操作でAttendEaseに出勤・退勤を打刻できる概念実証です。外部SDKとの連携やハードウェア入力からの API 呼び出しといった技術検証を目的としたもので、AttendEase本体（`backend/`, `frontend/`）のコードは一切変更しておらず、`integrations/codrone/`配下の独立したPythonスクリプトとして動作します。
 
 ### 操作フロー図
 
