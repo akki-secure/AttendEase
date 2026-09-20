@@ -16,7 +16,6 @@
     "@pinia/nuxt": "^0.5.5",
     "@vee-validate/nuxt": "^4.14.6",
     "@vee-validate/zod": "^4.14.6",
-    "date-fns": "^3.6.0",
     "nuxt": "^3.13.2",
     "pinia": "^2.2.4",
     "vee-validate": "^4.14.6",
