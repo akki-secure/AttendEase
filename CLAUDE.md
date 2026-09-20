@@ -1,4 +1,4 @@
-# AttendEase - SKILL.md
+# AttendEase - CLAUDE.md
 
 このプロジェクトで作業するAI（Claude）が事前に知っておくべき技術知見・注意点をまとめたファイル。
 
