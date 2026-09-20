@@ -2,6 +2,12 @@
 
 小規模チーム（〜50人）向けの勤怠登録・管理アプリです。無料のOSS技術のみで構築しています。
 
+- **デモ**: https://attendease2026.duckdns.org/login （動作時の注意は[動作確認時の注意事項](#動作確認時の注意事項)を参照）
+- **主な機能**: 出退勤打刻（出社/リモート）・ジオフェンス打刻制限・休暇/残業の申請承認・アカウントロック解除と監査ログ・CSV出力
+- **技術**: Nuxt 3 / FastAPI / SQLite / Docker / AWS EC2（HTTPS化）/ GitHub Actions（CI/CD）
+
+<img width="1015" height="595" alt="ダッシュボード（本日の勤怠と残業サマリー）" src="https://github.com/user-attachments/assets/a4304ad5-bb42-4be4-816c-9f9f2a7dc7ca" />
+
 ## 目次
 
 - [目的](#目的)
